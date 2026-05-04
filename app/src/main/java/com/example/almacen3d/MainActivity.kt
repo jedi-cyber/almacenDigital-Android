@@ -10,6 +10,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
@@ -27,12 +29,28 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // 1. Configuración de pantalla completa inmersiva
         enableEdgeToEdge()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
+        
         setContentView(R.layout.activity_main)
 
         val webView: WebView = findViewById(R.id.webView)
+        
+        // 2. Comportamiento Nativo: Sin bordes, sin scrollbars, sin rebote web
+        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        webView.isVerticalScrollBarEnabled = false
+        webView.isHorizontalScrollBarEnabled = false
+        webView.overScrollMode = WebView.OVER_SCROLL_NEVER
+        webView.isHapticFeedbackEnabled = true
 
-        // Cargador de assets locales
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/local_assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
@@ -85,30 +103,36 @@ class MainActivity : AppCompatActivity() {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.cacheMode = WebSettings.LOAD_NO_CACHE
-        webView.clearCache(true)
-
-        // Permitir Mixed Content para la comunicación con la IP 192.168.18.189
+        
+        // 3. Ajustes de experiencia móvil (Evita que parezca un navegador)
+        settings.textZoom = 100 
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
+        settings.setSupportZoom(false) // Desactiva el zoom tipo web
+        settings.mediaPlaybackRequiresUserGesture = false
+        
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-
-        settings.loadWithOverviewMode = true
-        settings.useWideViewPort = true
+        settings.loadWithOverviewMode = false
+        settings.useWideViewPort = false
 
         webView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html")
 
-        // Lógica de salida y navegación atrás
+        // 4. Navegación atrás tipo app
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (webView.canGoBack()) {
-                    webView.goBack() // Si navegó en el 3D, retrocede en la web
+                    webView.goBack()
                 } else {
-                    showExitDialog() // Si está en el inicio, pide confirmar salida
+                    showExitDialog()
                 }
             }
         })
 
+        // 5. Ajuste de áreas seguras (Insets)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            // Dejamos el padding vertical en 0 para que el 3D llegue hasta los bordes
+            v.setPadding(systemBars.left, 0, systemBars.right, 0)
             insets
         }
     }
