@@ -25,6 +25,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
@@ -193,7 +194,12 @@ class MainActivity : AppCompatActivity() {
             findViewById<View>(buttonId).setOnClickListener { hapticFeedback(); showMobileDashboard() }
         }
 
+        findViewById<View>(R.id.dashboardMenuButton)?.setOnClickListener { hapticFeedback(); showScreen(R.id.profileScreen); loadProfile() }
+        findViewById<View>(R.id.dashboardNotifyButton)?.setOnClickListener { hapticFeedback(); showAppMessage("No tienes notificaciones pendientes") }
+        findViewById<View>(R.id.homeVerTodosButton)?.setOnClickListener { hapticFeedback(); showScreen(R.id.productsScreen); loadProducts(); updateBottomNav(R.id.navProductsButton) }
+
         findViewById<View>(R.id.loginButton).setOnClickListener { hapticFeedback(); loginFromNativeForm() }
+
         findViewById<EditText>(R.id.loginPasswordInput).setOnEditorActionListener { _, _, _ ->
             loginFromNativeForm()
             true
@@ -486,8 +492,7 @@ class MainActivity : AppCompatActivity() {
         currentPageIndex = currentPageIndex.coerceIn(0, (totalPages - 1).coerceAtLeast(0))
         
         val startIndex = currentPageIndex * pageSize
-        val endIndex = (startIndex + pageSize).coerceAtMost(visibleProducts.size)
-        val paginated = visibleProducts.subList(startIndex, endIndex)
+        val paginated = visibleProducts.drop(startIndex).take(pageSize)
         
         setStatus(R.id.productsStatusText, "Página ${currentPageIndex + 1} de $totalPages (${visibleProducts.size} productos)", StatusKind.SUCCESS)
         
@@ -510,7 +515,8 @@ class MainActivity : AppCompatActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    topMargin = 20.dp()
+                    topMargin = 24.dp()
+                    bottomMargin = 32.dp()
                 }
             }
 
@@ -519,7 +525,13 @@ class MainActivity : AppCompatActivity() {
                     text = "← Anterior"
                     background = ContextCompat.getDrawable(this@MainActivity, R.drawable.white_button_background)
                     setTextColor(ContextCompat.getColor(this@MainActivity, R.color.warehouse_text))
-                    setOnClickListener { hapticFeedback(); currentPageIndex--; renderProducts() }
+                    setPadding(16.dp(), 0, 16.dp(), 0)
+                    setOnClickListener { 
+                        hapticFeedback()
+                        currentPageIndex--
+                        renderProducts()
+                        findViewById<ScrollView>(R.id.productsScreen)?.fullScroll(View.FOCUS_UP)
+                    }
                 })
             }
 
@@ -528,16 +540,24 @@ class MainActivity : AppCompatActivity() {
                     text = "Siguiente →"
                     background = ContextCompat.getDrawable(this@MainActivity, R.drawable.blue_button_background)
                     setTextColor(ContextCompat.getColor(this@MainActivity, R.color.white))
+                    setPadding(16.dp(), 0, 16.dp(), 0)
                     layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                         if (currentPageIndex > 0) marginStart = 16.dp()
                     }
-                    setOnClickListener { hapticFeedback(); currentPageIndex++; renderProducts() }
+                    setOnClickListener { 
+                        hapticFeedback()
+                        currentPageIndex++
+                        renderProducts()
+                        findViewById<ScrollView>(R.id.productsScreen)?.fullScroll(View.FOCUS_UP)
+                    }
                 })
             }
 
             list.addView(navRow)
         }
     }
+
+
 
 
 
