@@ -1,171 +1,1145 @@
 package com.example.almacen3d
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import android.webkit.ConsoleMessage
-import android.webkit.PermissionRequest
-import android.webkit.WebChromeClient
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.Gravity
+import android.view.HapticFeedbackConstants
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.isVisible
 import androidx.webkit.WebViewAssetLoader
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import com.example.almacen3d.model.ActiveSession
+import com.example.almacen3d.model.Product
+import com.example.almacen3d.model.Shelf
+import com.example.almacen3d.network.WarehouseApiClient
+import com.example.almacen3d.network.WarehouseRepository
+import com.example.almacen3d.ui.CardFactory
+import com.example.almacen3d.ui.StatusKind
+import com.example.almacen3d.ui.cleanText
+import com.example.almacen3d.ui.dp
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.URLEncoder
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
-    private var pendingWebPermissionRequest: PermissionRequest? = null
+    private val apiClient = WarehouseApiClient()
+    private val repository = WarehouseRepository(apiClient)
+    private val cardFactory by lazy { CardFactory(this) }
+    private val executor = Executors.newSingleThreadExecutor()
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private val preferences: SharedPreferences by lazy {
+        getSharedPreferences("almacen_mobile_cache", Context.MODE_PRIVATE)
+    }
+    
+    private lateinit var mobileDashboard: View
+    private lateinit var loginScreen: View
+    private lateinit var route3dContainer: View
+    private lateinit var routeWebView: WebView
+    private lateinit var scannerScreen: View
+    private lateinit var scannerPreview: PreviewView
+    private lateinit var appScreens: List<View>
+    
+    private var barcodeScanner: BarcodeScanner? = null
+    private var products: List<Product> = emptyList()
+    private var shelves: List<Shelf> = emptyList()
+    private var editingProductSku: String? = null
+    private var selectedRouteProduct: Product? = null
+    private var productFilter: ProductFilter = ProductFilter.ALL
+    private var scanOriginId: Int = R.id.mobileDashboard
+    private var currentPageIndex = 0
+    private var currentUserRole: String = "consulta"
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            showAppMessage("Captura de SKU recibida")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // 1. Configuración de pantalla completa inmersiva
+        setupProfessionalNativeLook()
+        setContentView(R.layout.activity_main)
+        bindViews()
+        setupNativeFeatures()
+        setupDashboard()
+        setupRouteWebView()
+        setupBackNavigation()
+        setupWindowInsets()
+        restoreSessionOrShowLogin()
+    }
+
+    private fun setupProfessionalNativeLook() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         WindowInsetsControllerCompat(window, window.decorView).apply {
             isAppearanceLightStatusBars = true
             isAppearanceLightNavigationBars = true
         }
-        
-        setContentView(R.layout.activity_main)
+    }
 
-        val webView: WebView = findViewById(R.id.webView)
-        
-        // 2. Comportamiento Nativo: Sin bordes, sin scrollbars, sin rebote web
-        webView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        webView.isVerticalScrollBarEnabled = false
-        webView.isHorizontalScrollBarEnabled = false
-        webView.overScrollMode = WebView.OVER_SCROLL_NEVER
-        webView.isHapticFeedbackEnabled = true
+    private fun setupNativeFeatures() {
+        createNotificationChannel()
+        requestNotificationPermissionIfNeeded()
+    }
 
-        val assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler("/local_assets/", WebViewAssetLoader.AssetsPathHandler(this))
-            .build()
+    private fun bindViews() {
+        loginScreen = findViewById(R.id.loginScreen)
+        mobileDashboard = findViewById(R.id.mobileDashboard)
+        route3dContainer = findViewById(R.id.route3dContainer)
+        routeWebView = findViewById(R.id.routeWebView)
+        scannerScreen = findViewById(R.id.scannerScreen)
+        scannerPreview = findViewById(R.id.scannerPreview)
+        appScreens = listOf(
+            loginScreen,
+            mobileDashboard,
+            findViewById(R.id.productsScreen),
+            findViewById(R.id.productFormScreen),
+            findViewById(R.id.productRouteScreen),
+            findViewById(R.id.shelvesScreen),
+            findViewById(R.id.reportsScreen),
+            findViewById(R.id.profileScreen),
+            findViewById(R.id.settingsScreen),
+            route3dContainer,
+            scannerScreen
+        )
+    }
 
-        webView.webChromeClient = object : WebChromeClient() {
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d("WebViewConsole", "${consoleMessage.message()} -- From line " +
-                        "${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}")
-                return true
-            }
+    private fun setupDashboard() {
+        findViewById<View>(R.id.iniciarOperacionButton)?.setOnClickListener {
+            hapticFeedback()
+            findViewById<EditText>(R.id.homeSearchInput).requestFocus()
+        }
+        setupBottomNavigation()
+        setupMobileScreens()
+    }
 
-            override fun onPermissionRequest(request: PermissionRequest) {
-                val wantsCamera = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-                if (!wantsCamera) {
-                    request.deny()
-                    return
-                }
+    private fun applyMobileProductOnlyMode() { }
 
-                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                    request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
-                    return
-                }
 
-                pendingWebPermissionRequest = request
-                ActivityCompat.requestPermissions(
-                    this@MainActivity,
-                    arrayOf(Manifest.permission.CAMERA),
-                    CAMERA_PERMISSION_REQUEST
-                )
-            }
+    private fun setupBottomNavigation() {
+        findViewById<View>(R.id.navHomeButton).setOnClickListener { hapticFeedback(); showMobileDashboard(); updateBottomNav(R.id.navHomeButton) }
+        findViewById<View>(R.id.navProductsButton).setOnClickListener { hapticFeedback(); showScreen(R.id.productsScreen); loadProducts(); updateBottomNav(R.id.navProductsButton) }
+        findViewById<View>(R.id.navShelvesButton).setOnClickListener { hapticFeedback(); showScreen(R.id.shelvesScreen); loadShelves(); updateBottomNav(R.id.navShelvesButton) }
+        findViewById<View>(R.id.navReportsButton).setOnClickListener { hapticFeedback(); showScreen(R.id.profileScreen); loadProfile(); updateBottomNav(R.id.navReportsButton) }
+    }
+
+    private fun updateBottomNav(activeId: Int) {
+        val navIds = listOf(R.id.navHomeButton, R.id.navProductsButton, R.id.navShelvesButton, R.id.navReportsButton)
+        navIds.forEach { id ->
+            val view = findViewById<LinearLayout>(id)
+            val icon = view.getChildAt(0) as ImageView
+            val text = view.getChildAt(1) as TextView
+            val isActive = id == activeId
+            
+            icon.setColorFilter(ContextCompat.getColor(this, if (isActive) R.color.secondary else R.color.warehouse_text_muted))
+            text.setTextColor(ContextCompat.getColor(this, if (isActive) R.color.secondary else R.color.warehouse_text_muted))
+            text.setTypeface(null, if (isActive) Typeface.BOLD else Typeface.NORMAL)
+        }
+    }
+
+    private fun setupMobileScreens() {
+        val backButtons = listOf(
+            R.id.productsBackButton, R.id.productFormBackButton,
+            R.id.productRouteBackButton, R.id.shelvesBackButton,
+            R.id.reportsBackButton, R.id.profileBackButton, R.id.settingsBackButton
+        )
+        backButtons.forEach { buttonId ->
+            findViewById<View>(buttonId).setOnClickListener { hapticFeedback(); showMobileDashboard() }
         }
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun shouldInterceptRequest(
-                view: WebView,
-                request: WebResourceRequest
-            ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
-
-            override fun onReceivedError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                error: android.webkit.WebResourceError?
-            ) {
-                super.onReceivedError(view, request, error)
-                Log.e("WebViewError", "Error al cargar: ${request?.url} - ${error?.description}")
-            }
+        findViewById<View>(R.id.loginButton).setOnClickListener { hapticFeedback(); loginFromNativeForm() }
+        findViewById<EditText>(R.id.loginPasswordInput).setOnEditorActionListener { _, _, _ ->
+            loginFromNativeForm()
+            true
         }
 
-        val settings = webView.settings
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.cacheMode = WebSettings.LOAD_NO_CACHE
+        findViewById<View>(R.id.homeAddProductButton).setOnClickListener { hapticFeedback(); clearProductForm(); showScreen(R.id.productFormScreen) }
+        findViewById<View>(R.id.homeSearchButton).setOnClickListener {
+            hapticFeedback()
+            val query = findViewById<EditText>(R.id.homeSearchInput).text.toString().trim()
+            val product = products.firstOrNull {
+                query.isNotBlank() && (it.sku.equals(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true))
+            } ?: products.firstOrNull()
+            if (product == null) showAppMessage("No hay productos para abrir ruta") else openProductRoute3d(product)
+        }
         
-        // 3. Ajustes de experiencia móvil (Evita que parezca un navegador)
-        settings.textZoom = 100 
-        settings.builtInZoomControls = false
-        settings.displayZoomControls = false
-        settings.setSupportZoom(false) // Desactiva el zoom tipo web
-        settings.mediaPlaybackRequiresUserGesture = false
-        
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-        settings.loadWithOverviewMode = false
-        settings.useWideViewPort = false
-
-        webView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html")
-
-        // 4. Navegación atrás tipo app
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    showExitDialog()
-                }
-            }
+        findViewById<EditText>(R.id.homeSearchInput).addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = renderHomeResults()
+            override fun afterTextChanged(s: Editable?) = Unit
         })
 
-        // 5. Ajuste de áreas seguras (Insets)
+        findViewById<View>(R.id.addProductButton).setOnClickListener { hapticFeedback(); clearProductForm(); showScreen(R.id.productFormScreen) }
+        findViewById<View>(R.id.saveProductButton).setOnClickListener { hapticFeedback(); saveProductFromForm() }
+        
+        findViewById<View>(R.id.homeScanButton).setOnClickListener { 
+            hapticFeedback()
+            scanOriginId = R.id.mobileDashboard
+            openCameraForScanner() 
+        }
+        findViewById<View>(R.id.productsScanButton).setOnClickListener { 
+            hapticFeedback()
+            scanOriginId = R.id.productsScreen
+            openCameraForScanner() 
+        }
+
+        
+        findViewById<View>(R.id.openRoute3dButton).setOnClickListener { hapticFeedback(); openRoute3d() }
+        findViewById<View>(R.id.closeRoute3dButton).setOnClickListener { hapticFeedback(); showMobileDashboard() }
+        findViewById<View>(R.id.shareReportButton).setOnClickListener { hapticFeedback(); shareReport() }
+        findViewById<View>(R.id.scannerBackButton).setOnClickListener { hapticFeedback(); stopScanner(); showScreen(scanOriginId) }
+        findViewById<View>(R.id.profileRefreshButton).setOnClickListener { hapticFeedback(); loadProfile() }
+        findViewById<View>(R.id.profileSaveButton).setOnClickListener { hapticFeedback(); saveProfile() }
+        findViewById<View>(R.id.profileLogoutButton).setOnClickListener { hapticFeedback(); logoutFromMobile(false) }
+        findViewById<View>(R.id.profileLogoutAllButton).setOnClickListener { hapticFeedback(); logoutFromMobile(true) }
+        findViewById<View>(R.id.profileReportsButton).setOnClickListener { hapticFeedback(); showScreen(R.id.reportsScreen); loadReports() }
+        
+        findViewById<EditText>(R.id.productsSearchInput).addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                currentPageIndex = 0
+                renderProducts()
+            }
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+        
+        findViewById<View>(R.id.filterAllButton).setOnClickListener { hapticFeedback(); productFilter = ProductFilter.ALL; currentPageIndex = 0; renderProducts() }
+        findViewById<View>(R.id.filterUncategorizedButton).setOnClickListener { hapticFeedback(); productFilter = ProductFilter.UNCATEGORIZED; currentPageIndex = 0; renderProducts() }
+        findViewById<View>(R.id.filterFirstShelfButton).setOnClickListener { hapticFeedback(); productFilter = ProductFilter.FIRST_SHELF; currentPageIndex = 0; renderProducts() }
+
+
+        
+        findViewById<View>(R.id.saveSettingsButton).setOnClickListener {
+            hapticFeedback()
+            val apiUrl = findViewById<EditText>(R.id.apiUrlInput).text.toString()
+            apiClient.setBaseUrl(apiUrl)
+            preferences.edit {
+                putString(PREF_API_BASE_URL, apiUrl)
+                remove(PREF_SESSION_TOKEN)
+            }
+            showAppMessage("Configuración actualizada")
+            showLoginScreen("Servidor actualizado. Inicia sesion nuevamente.")
+        }
+    }
+
+    private fun restoreSessionOrShowLogin() {
+        val savedApiUrl = preferences.getString(PREF_API_BASE_URL, null)
+        if (!savedApiUrl.isNullOrBlank()) {
+            apiClient.setBaseUrl(savedApiUrl)
+            findViewById<EditText>(R.id.apiUrlInput).setText(savedApiUrl)
+        }
+        val token = preferences.getString(PREF_SESSION_TOKEN, null)
+        if (token.isNullOrBlank()) {
+            showLoginScreen()
+            return
+        }
+        apiClient.setSessionToken(token)
+        setLoginStatus("Validando sesion...", StatusKind.LOADING)
+        executor.execute {
+            repository.currentSession()
+                .onSuccess { session ->
+                    runOnUiThread {
+                        preferences.edit { putString(PREF_SESSION_TOKEN, session.token) }
+                        showAuthenticatedApp()
+                    }
+                }
+                .onFailure {
+                    runOnUiThread {
+                        preferences.edit { remove(PREF_SESSION_TOKEN) }
+                        apiClient.setSessionToken(null)
+                        showLoginScreen("Tu sesion expiro. Inicia sesion nuevamente.")
+                    }
+                }
+        }
+    }
+
+    private fun loginFromNativeForm() {
+        val emailInput = findViewById<EditText>(R.id.loginEmailInput)
+        val passwordInput = findViewById<EditText>(R.id.loginPasswordInput)
+        val email = emailInput.text.toString().trim()
+        val password = passwordInput.text.toString()
+        if (email.isBlank() || password.isBlank()) {
+            setLoginStatus("Ingresa correo y contraseña.", StatusKind.WARNING)
+            return
+        }
+        setLoginStatus("Iniciando sesion...", StatusKind.LOADING)
+        executor.execute {
+            repository.authenticate(email, password)
+                .onSuccess { session ->
+                    runOnUiThread {
+                        preferences.edit {
+                            putString(PREF_SESSION_TOKEN, session.token)
+                            putString(PREF_LAST_EMAIL, session.user.email)
+                        }
+                        passwordInput.setText("")
+                        showAppMessage("Sesion iniciada")
+                        showAuthenticatedApp()
+                    }
+                }
+                .onFailure { error ->
+                    runOnUiThread {
+                        setLoginStatus(error.message ?: "No se pudo iniciar sesion.", StatusKind.ERROR)
+                    }
+                }
+        }
+    }
+
+    private fun showAuthenticatedApp() {
+        showMobileDashboard()
+        loadShelves()
+        loadProducts()
+        loadProfile()
+    }
+
+    private fun showLoginScreen(message: String = "Inicia sesion para continuar.") {
+        hideAllScreens()
+        findViewById<View>(R.id.bottomNavigation).isVisible = false
+        routeWebView.stopLoading()
+        loginScreen.isVisible = true
+        val lastEmail = preferences.getString(PREF_LAST_EMAIL, "")
+        if (!lastEmail.isNullOrBlank()) {
+            findViewById<EditText>(R.id.loginEmailInput).setText(lastEmail)
+        }
+        setLoginStatus(message, StatusKind.INFO)
+    }
+
+    private fun setLoginStatus(message: String, kind: StatusKind) {
+        findViewById<TextView>(R.id.loginStatusText).apply {
+            text = message
+            setTextColor(ContextCompat.getColor(this@MainActivity, when (kind) {
+                StatusKind.ERROR -> R.color.error
+                StatusKind.SUCCESS -> R.color.success
+                StatusKind.WARNING -> R.color.warning
+                StatusKind.INFO -> R.color.secondary
+                else -> R.color.text_secondary
+            }))
+        }
+    }
+
+    private fun hapticFeedback() {
+        window.decorView.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+    }
+
+    private fun setProductsLoadingVisible(visible: Boolean) {
+        findViewById<View>(R.id.homeLoadingIndicator).isVisible = visible
+        findViewById<View>(R.id.productsLoadingIndicator).isVisible = visible
+    }
+
+    private fun showEmptyProductsState() {
+        val message = "Catalogo cargado correctamente. Aun no hay productos registrados."
+        setStatus(R.id.homeStatusText, message, StatusKind.EMPTY)
+        setStatus(R.id.productsStatusText, message, StatusKind.EMPTY)
+        findViewById<LinearLayout>(R.id.homeResultsList).apply {
+            removeAllViews()
+            addView(cardFactory.createCard(
+                title = "Sin productos registrados",
+                body = "Cuando agregues productos, apareceran aqui con acceso directo a su ruta 3D.",
+                primaryActionText = "Crear producto",
+                primaryAction = {
+                    clearProductForm()
+                    showScreen(R.id.productFormScreen)
+                }
+            ))
+        }
+        findViewById<LinearLayout>(R.id.productsList).apply {
+            removeAllViews()
+            addView(cardFactory.createCard(
+                title = "Inventario vacio",
+                body = "No hay productos para buscar todavia. Registra el primero para activar busqueda y rutas.",
+                primaryActionText = "Crear producto",
+                primaryAction = {
+                    clearProductForm()
+                    showScreen(R.id.productFormScreen)
+                }
+            ))
+        }
+    }
+
+    private fun setProductsRetryVisible(visible: Boolean) {
+        // No longer using these buttons in the redesigned UI
+    }
+
+    private fun showProductsConnectionError(error: Throwable?) {
+        val detail = error?.message?.takeIf { it.isNotBlank() }?.let { " Detalle: $it" } ?: ""
+        val message = "No se pudo conectar con la API de productos.$detail La lista no esta vacia necesariamente; la carga fallo."
+        setStatus(R.id.homeStatusText, message, StatusKind.ERROR)
+        setStatus(R.id.productsStatusText, message, StatusKind.ERROR)
+        setProductsRetryVisible(true)
+        findViewById<LinearLayout>(R.id.homeResultsList).removeAllViews()
+        findViewById<LinearLayout>(R.id.productsList).removeAllViews()
+        setProductsLoadingVisible(false)
+    }
+
+    private fun loadProducts() {
+        setProductsRetryVisible(false)
+        setProductsLoadingVisible(true)
+        val loadingText = "Cargando almacén y productos..."
+        setStatus(R.id.productsStatusText, loadingText, StatusKind.LOADING)
+        
+        findViewById<TextView>(R.id.homeStatusTextTitle)?.text = "Sincronizando..."
+        findViewById<TextView>(R.id.homeStatusText)?.text = loadingText
+        
+        executor.execute {
+            repository.fetchProducts()
+                .onSuccess { loaded ->
+                    products = loaded
+                    cacheProducts(loaded)
+                    runOnUiThread { 
+                        setProductsLoadingVisible(false)
+                        if (loaded.isEmpty()) showEmptyProductsState() 
+                        else { 
+                            renderProducts()
+                            renderHomeResults()
+                            findViewById<TextView>(R.id.homeStatusTextTitle)?.text = "${loaded.size} productos disponibles."
+                            findViewById<TextView>(R.id.homeStatusText)?.text = "Busca uno para iniciar la ruta 3D."
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    products = loadCachedProducts()
+                    runOnUiThread {
+                        setProductsLoadingVisible(false)
+                        if (products.isNotEmpty()) {
+                            renderProducts()
+                            setStatus(R.id.productsStatusText, "Modo offline: Cargado desde caché", StatusKind.EMPTY)
+                        } else {
+                            showProductsConnectionError(error)
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun renderProducts() {
+        val query = findViewById<EditText>(R.id.productsSearchInput).text.toString().trim().lowercase()
+        val firstShelfId = shelves.firstOrNull()?.id ?: products.firstOrNull()?.shelfId
+        val visibleProducts = products
+            .filter { query.isBlank() || it.sku.lowercase().contains(query) || it.name.lowercase().contains(query) || it.category.lowercase().contains(query) || it.brand.lowercase().contains(query) }
+            .filter {
+                when (productFilter) {
+                    ProductFilter.ALL -> true
+                    ProductFilter.UNCATEGORIZED -> it.category.contains("Sin categ", ignoreCase = true)
+                    ProductFilter.FIRST_SHELF -> firstShelfId == null || it.shelfId == firstShelfId
+                }
+            }
+        val list = findViewById<LinearLayout>(R.id.productsList)
+        list.removeAllViews()
+
+        if (products.isEmpty()) {
+            showEmptyProductsState()
+            return
+        }
+
+        if (visibleProducts.isEmpty()) {
+            setStatus(R.id.productsStatusText, "No hay coincidencias para esta busqueda.", StatusKind.EMPTY)
+            return
+        }
+
+        val pageSize = 20
+        val totalPages = kotlin.math.ceil(visibleProducts.size.toDouble() / pageSize).toInt()
+        currentPageIndex = currentPageIndex.coerceIn(0, (totalPages - 1).coerceAtLeast(0))
+        
+        val startIndex = currentPageIndex * pageSize
+        val endIndex = (startIndex + pageSize).coerceAtMost(visibleProducts.size)
+        val paginated = visibleProducts.subList(startIndex, endIndex)
+        
+        setStatus(R.id.productsStatusText, "Página ${currentPageIndex + 1} de $totalPages (${visibleProducts.size} productos)", StatusKind.SUCCESS)
+        
+        paginated.forEach { product ->
+            list.addView(
+                cardFactory.createCard(
+                    title = product.name,
+                    body = "SKU: ${product.sku}\nCategoria: ${product.category}\nMarca: ${product.brand}\n${product.locationSummary(shelves)}",
+                    primaryActionText = "VER RUTA 3D",
+                    primaryAction = { openProductRoute3d(product) },
+                    secondaryActionText = "EDITAR",
+                    secondaryAction = { fillProductForm(product); showScreen(R.id.productFormScreen) }
+                )
+            )
+        }
+
+        // Navigation Controls
+        if (totalPages > 1) {
+            val navRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = 20.dp()
+                }
+            }
+
+            if (currentPageIndex > 0) {
+                navRow.addView(Button(this).apply {
+                    text = "← Anterior"
+                    background = ContextCompat.getDrawable(this@MainActivity, R.drawable.white_button_background)
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.warehouse_text))
+                    setOnClickListener { hapticFeedback(); currentPageIndex--; renderProducts() }
+                })
+            }
+
+            if (currentPageIndex < totalPages - 1) {
+                navRow.addView(Button(this).apply {
+                    text = "Siguiente →"
+                    background = ContextCompat.getDrawable(this@MainActivity, R.drawable.blue_button_background)
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.white))
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                        if (currentPageIndex > 0) marginStart = 16.dp()
+                    }
+                    setOnClickListener { hapticFeedback(); currentPageIndex++; renderProducts() }
+                })
+            }
+
+            list.addView(navRow)
+        }
+    }
+
+
+
+    private fun renderHomeResults() {
+        val query = findViewById<EditText>(R.id.homeSearchInput).text.toString().trim().lowercase()
+        val list = findViewById<LinearLayout>(R.id.homeResultsList)
+        list.removeAllViews()
+
+        if (products.isEmpty()) {
+            showEmptyProductsState()
+            return
+        }
+
+        val visibleProducts = products
+            .filter { query.isBlank() || it.sku.lowercase().contains(query) || it.name.lowercase().contains(query) || it.category.lowercase().contains(query) || it.brand.lowercase().contains(query) }
+            .sortedWith(compareBy<Product> { if (query.isNotBlank() && it.sku.lowercase() == query) 0 else 1 }.thenBy { it.name.lowercase() })
+            .take(6)
+
+        if (visibleProducts.isEmpty()) {
+            setStatus(R.id.homeStatusText, "Producto no encontrado. Prueba con el SKU, nombre, categoria o marca.", StatusKind.EMPTY)
+            return
+        }
+
+        val status = if (query.isBlank()) {
+            "${products.size} productos disponibles. Busca uno para iniciar la ruta 3D."
+        } else {
+            "${visibleProducts.size} coincidencia(s). Toca Ruta 3D para navegar."
+        }
+        setStatus(R.id.homeStatusText, status, StatusKind.SUCCESS)
+
+        visibleProducts.forEach { product ->
+            list.addView(
+                cardFactory.createCard(
+                    title = product.name,
+                    body = "SKU: ${product.sku}\n${product.category} · ${product.brand}\n${product.locationSummary(shelves)}",
+                    primaryActionText = "Ruta 3D",
+                    primaryAction = { openProductRoute3d(product) },
+                    secondaryActionText = "Editar",
+                    secondaryAction = { fillProductForm(product); showScreen(R.id.productFormScreen) }
+                )
+            )
+        }
+    }
+
+    private fun openProductRoute3d(product: Product) {
+        selectedRouteProduct = product
+        showAppMessage("Ruta 3D hacia ${product.name}")
+        openRoute3d()
+    }
+    
+    private fun showProductRoute(product: Product) {
+        selectedRouteProduct = product
+        val shelf = shelves.firstOrNull { it.id == product.shelfId }
+        findViewById<TextView>(R.id.routeProductTitle).text = product.name
+        findViewById<TextView>(R.id.routeLocationText).text = "Ubicación: ${product.locationSummary(shelves)}"
+
+        val steps = buildRouteSteps(product, shelf)
+        val list = findViewById<LinearLayout>(R.id.routeStepsList)
+        list.removeAllViews()
+        steps.forEachIndexed { index, step ->
+            list.addView(cardFactory.createCard("Paso ${index + 1}", step))
+        }
+
+        showScreen(R.id.productRouteScreen)
+    }
+
+    private fun buildRouteSteps(product: Product, shelf: Shelf?): List<String> {
+        val shelfName = shelf?.let { "${it.id} · ${it.label}" } ?: "Estante ${product.shelfId}"
+        return listOf(
+            "Dirígete al pasillo principal y localiza el $shelfName.",
+            "Ubícate frente al estante en la ${product.sectionLabel(shelf)}.",
+            "El producto se encuentra en el ${product.levelLabel(shelf)}.",
+            "Verifica el SKU ${product.sku} antes de proceder."
+        )
+    }
+
+    private fun loadShelves() {
+        setStatus(R.id.shelvesStatusText, "Sincronizando estantes...", StatusKind.LOADING)
+        executor.execute {
+            repository.fetchShelves()
+                .onSuccess { loaded ->
+                    shelves = loaded
+                    cacheShelves(loaded)
+                    runOnUiThread { renderShelves() }
+                }
+                .onFailure {
+                    shelves = loadCachedShelves()
+                    runOnUiThread {
+                        if (shelves.isNotEmpty()) {
+                            renderShelves()
+                            setStatus(R.id.shelvesStatusText, "Offline: Usando datos locales", StatusKind.EMPTY)
+                        } else {
+                            setStatus(R.id.shelvesStatusText, "Error de sincronización", StatusKind.ERROR)
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun renderShelves() {
+        val list = findViewById<LinearLayout>(R.id.shelvesList)
+        list.removeAllViews()
+
+        if (shelves.isEmpty()) {
+            setStatus(R.id.shelvesStatusText, "Sin estantes registrados", StatusKind.EMPTY)
+            return
+        }
+
+        setStatus(R.id.shelvesStatusText, "${shelves.size} unidades de almacenamiento", StatusKind.SUCCESS)
+        shelves.forEach { shelf ->
+            list.addView(
+                cardFactory.createCard(
+                    title = shelf.label,
+                    body = "ID: ${shelf.id}\n${shelf.sections} secciones · ${shelf.width.cleanText()}x${shelf.height.cleanText()}x${shelf.depth.cleanText()} cm"
+                )
+            )
+        }
+    }
+
+    private fun loadReports() {
+        setStatus(R.id.reportsStatusText, "Generando reporte ejecutivo...", StatusKind.LOADING)
+        executor.execute {
+            val result = runCatching {
+                val p = apiClient.fetchProducts()
+                val s = apiClient.fetchShelves()
+                p to s
+            }
+            runOnUiThread {
+                result.onSuccess { (p, s) -> products = p; shelves = s; renderReports() }
+                    .onFailure { products = loadCachedProducts(); shelves = loadCachedShelves(); renderReports() }
+            }
+        }
+    }
+
+    private fun renderReports() {
+        val list = findViewById<LinearLayout>(R.id.reportsList)
+        list.removeAllViews()
+        val totalVolume = products.sumOf { it.width * it.height * it.depth }
+        setStatus(R.id.reportsStatusText, "Reporte actualizado", StatusKind.SUCCESS)
+        list.addView(cardFactory.createCard("Inventario Total", "${products.size} productos registrados en sistema."))
+        list.addView(cardFactory.createCard("Capacidad", "${shelves.size} estantes operativos."))
+        list.addView(cardFactory.createCard("Ocupación Estática", "Volumen total de carga: ${totalVolume.cleanText()} cm³."))
+    }
+
+    private fun loadProfile() {
+        setStatus(R.id.profileStatusText, "Sincronizando cuenta...", StatusKind.LOADING)
+        executor.execute {
+            val sessionResult = repository.currentSession()
+            val sessionsResult = repository.fetchActiveSessions()
+            runOnUiThread {
+                sessionResult
+                    .onSuccess { session ->
+                        currentUserRole = session.user.role
+                        findViewById<TextView>(R.id.profileAvatarText).text =
+                            session.user.name.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+                        findViewById<TextView>(R.id.profileNameText).text = session.user.name
+                        findViewById<TextView>(R.id.profileEmailText).text = session.user.email
+                        findViewById<TextView>(R.id.profileRoleText).text = "Rol: ${session.user.role}"
+                        findViewById<TextView>(R.id.profileExpiresText).text = "Sesion activa hasta: ${session.expiresAt}"
+                        findViewById<EditText>(R.id.profileNameInput).setText(session.user.name)
+                        findViewById<EditText>(R.id.profileEmailInput).setText(session.user.email)
+                        setStatus(R.id.profileStatusText, "Perfil nativo sincronizado", StatusKind.SUCCESS)
+                    }
+                    .onFailure { error ->
+                        setStatus(R.id.profileStatusText, error.message ?: "No se pudo cargar el perfil", StatusKind.ERROR)
+                    }
+
+                sessionsResult
+                    .onSuccess { renderActiveSessions(it) }
+                    .onFailure { renderActiveSessions(emptyList()) }
+            }
+        }
+    }
+
+    private fun renderActiveSessions(sessions: List<ActiveSession>) {
+        val list = findViewById<LinearLayout>(R.id.profileSessionsList)
+        list.removeAllViews()
+        if (sessions.isEmpty()) {
+            list.addView(cardFactory.createCard("Sesiones activas", "No se pudo obtener el detalle de sesiones."))
+            return
+        }
+        sessions.forEach { session ->
+            val label = if (session.current) "Este dispositivo" else "Otro dispositivo"
+            list.addView(
+                cardFactory.createCard(
+                    label,
+                    "IP: ${session.ipAddress}\nUltimo uso: ${session.lastSeenAt}\nExpira: ${session.expiresAt}"
+                )
+            )
+        }
+    }
+
+    private fun saveProfile() {
+        val name = findViewById<EditText>(R.id.profileNameInput).text.toString().trim()
+        val email = findViewById<EditText>(R.id.profileEmailInput).text.toString().trim()
+        if (name.isBlank() || email.isBlank()) {
+            showAppMessage("Nombre y correo son obligatorios")
+            return
+        }
+        setStatus(R.id.profileStatusText, "Guardando perfil...", StatusKind.LOADING)
+        executor.execute {
+            repository.updateProfile(name, email)
+                .onSuccess {
+                    runOnUiThread {
+                        showAppMessage("Perfil actualizado")
+                        loadProfile()
+                    }
+                }
+                .onFailure { error ->
+                    runOnUiThread {
+                        setStatus(R.id.profileStatusText, error.message ?: "No se pudo guardar el perfil", StatusKind.ERROR)
+                    }
+                }
+        }
+    }
+
+    private fun logoutFromMobile(allDevices: Boolean) {
+        executor.execute {
+            repository.logout(allDevices)
+            runOnUiThread {
+                showAppMessage(if (allDevices) "Sesiones cerradas" else "Sesion cerrada")
+                preferences.edit { remove(PREF_SESSION_TOKEN) }
+                apiClient.setSessionToken(null)
+                products = emptyList()
+                shelves = emptyList()
+                showLoginScreen("Sesion cerrada correctamente.")
+            }
+        }
+    }
+
+    private fun saveProductFromForm() {
+        val product = readProductForm() ?: return
+        setStatus(R.id.productsStatusText, "Sincronizando con servidor...", StatusKind.LOADING)
+        executor.execute {
+            repository.saveProduct(product)
+                .onSuccess {
+                    runOnUiThread {
+                        showScreen(R.id.productsScreen)
+                        showAppMessage("Guardado exitosamente")
+                        showNativeNotification("Catálogo Actualizado", "Producto ${product.sku} guardado.")
+                        loadProducts()
+                    }
+                }
+                .onFailure { error ->
+                    runOnUiThread {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle("Error de Sincronización")
+                            .setMessage(error.message ?: "Servidor no disponible")
+                            .setPositiveButton("REINTENTAR", null)
+                            .show()
+                    }
+                }
+        }
+    }
+
+    private fun readProductForm(): Product? {
+        val sku = findViewById<EditText>(R.id.productSkuInput).text.toString().trim()
+        val name = findViewById<EditText>(R.id.productNameInput).text.toString().trim()
+        val category = findViewById<EditText>(R.id.productCategoryInput).text.toString().trim().ifBlank { "Sin categoria" }
+        val brand = findViewById<EditText>(R.id.productBrandInput).text.toString().trim().ifBlank { "Sin marca" }
+        val shelfId = findViewById<EditText>(R.id.productShelfInput).text.toString().trim()
+        val w = findViewById<EditText>(R.id.productWidthInput).text.toString().toDoubleOrNull()
+        val h = findViewById<EditText>(R.id.productHeightInput).text.toString().toDoubleOrNull()
+        val d = findViewById<EditText>(R.id.productDepthInput).text.toString().toDoubleOrNull()
+
+        if (sku.isBlank() || name.isBlank() || shelfId.isBlank() || w == null || h == null || d == null) {
+            showAppMessage("Completa SKU, nombre, estante y dimensiones")
+            return null
+        }
+
+        return Product(sku, name, category, brand, shelfId, w, h, d)
+    }
+
+    private fun clearProductForm() {
+        editingProductSku = null
+        findViewById<EditText>(R.id.productSkuInput).setText("")
+        findViewById<EditText>(R.id.productNameInput).setText("")
+        findViewById<EditText>(R.id.productCategoryInput).setText("")
+        findViewById<EditText>(R.id.productBrandInput).setText("")
+        findViewById<EditText>(R.id.productShelfInput).setText(shelves.firstOrNull()?.id ?: "S01")
+        findViewById<EditText>(R.id.productWidthInput).setText("")
+        findViewById<EditText>(R.id.productHeightInput).setText("")
+        findViewById<EditText>(R.id.productDepthInput).setText("")
+    }
+
+    private fun fillProductForm(product: Product) {
+        editingProductSku = product.sku
+        findViewById<EditText>(R.id.productSkuInput).setText(product.sku)
+        findViewById<EditText>(R.id.productNameInput).setText(product.name)
+        findViewById<EditText>(R.id.productCategoryInput).setText(product.category)
+        findViewById<EditText>(R.id.productBrandInput).setText(product.brand)
+        findViewById<EditText>(R.id.productShelfInput).setText(product.shelfId)
+        findViewById<EditText>(R.id.productWidthInput).setText(product.width.cleanText())
+        findViewById<EditText>(R.id.productHeightInput).setText(product.height.cleanText())
+        findViewById<EditText>(R.id.productDepthInput).setText(product.depth.cleanText())
+    }
+
+    private fun setStatus(viewId: Int, message: String, kind: StatusKind) {
+        findViewById<TextView>(viewId).apply {
+            text = message
+	            setTextColor(ContextCompat.getColor(this@MainActivity, when(kind) {
+	                StatusKind.ERROR -> R.color.error
+	                StatusKind.SUCCESS -> R.color.success
+	                StatusKind.WARNING -> R.color.warning
+	                StatusKind.INFO -> R.color.secondary
+	                else -> R.color.text_secondary
+	            }))
+	        }
+    }
+
+    private fun showAppMessage(message: String) {
+        hapticFeedback()
+        Snackbar.make(findViewById(R.id.main), message, Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun openCameraForScanner() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), NATIVE_CAMERA_REQUEST)
+            return
+        }
+        startScanner()
+    }
+
+    private fun startScanner() {
+        hideAllScreens()
+        findViewById<View>(R.id.bottomNavigation).isVisible = false
+        scannerScreen.isVisible = true
+
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_ALL_FORMATS)
+            .build()
+        barcodeScanner = BarcodeScanning.getClient(options)
+
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(scannerPreview.surfaceProvider)
+            }
+
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+
+            imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+                val mediaImage = imageProxy.image
+                if (mediaImage != null) {
+                    val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                    barcodeScanner?.process(image)
+                        ?.addOnSuccessListener { barcodes ->
+                            for (barcode in barcodes) {
+                                val rawValue = barcode.rawValue
+                                if (rawValue != null) {
+                                    runOnUiThread {
+                                        onBarcodeScanned(rawValue)
+                                    }
+                                    break
+                                }
+                            }
+                        }
+                        ?.addOnCompleteListener {
+                            imageProxy.close()
+                        }
+                } else {
+                    imageProxy.close()
+                }
+            }
+
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageAnalysis)
+            } catch (e: Exception) {
+                showAppMessage("Error al iniciar cámara: ${e.message}")
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun onBarcodeScanned(sku: String) {
+        stopScanner()
+        if (scanOriginId == R.id.mobileDashboard) {
+            findViewById<EditText>(R.id.homeSearchInput).setText(sku)
+            showMobileDashboard()
+            renderHomeResults()
+        } else {
+            findViewById<EditText>(R.id.productsSearchInput).setText(sku)
+            showScreen(R.id.productsScreen)
+            renderProducts()
+        }
+        showAppMessage("Buscando código: $sku")
+    }
+
+    private fun stopScanner() {
+        ProcessCameraProvider.getInstance(this).get().unbindAll()
+        barcodeScanner?.close()
+        barcodeScanner = null
+    }
+
+    private fun shareReport() {
+        val report = "Reporte Almacén 3D\nProductos: ${products.size}\nEstantes: ${shelves.size}"
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, report) }, "Compartir"))
+    }
+
+    private fun setupRouteWebView() {
+        routeWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        routeWebView.settings.apply {
+            javaScriptEnabled = true; domStorageEnabled = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        }
+        val assetLoader = WebViewAssetLoader.Builder().addPathHandler("/local_assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
+        routeWebView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(v: WebView, r: WebResourceRequest): WebResourceResponse? = assetLoader.shouldInterceptRequest(r.url)
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                return request.url.host != "appassets.androidplatform.net"
+            }
+        }
+    }
+
+    private fun openRoute3d() {
+        val p = selectedRouteProduct ?: return
+        hideAllScreens(); findViewById<View>(R.id.bottomNavigation).isVisible = false
+        route3dContainer.isVisible = true
+        routeWebView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html?mode=mobile-route&sku=${URLEncoder.encode(p.sku, "UTF-8")}")
+    }
+
+    private fun showMobileDashboard() {
+        if (!apiClient.hasSession()) {
+            showLoginScreen()
+            return
+        }
+        hideAllScreens()
+        findViewById<View>(R.id.bottomNavigation).isVisible = true
+        mobileDashboard.isVisible = true
+    }
+
+    private fun showScreen(id: Int) {
+        if (!apiClient.hasSession()) {
+            showLoginScreen()
+            return
+        }
+        hideAllScreens()
+        findViewById<View>(R.id.bottomNavigation).isVisible = true
+        findViewById<View>(id).isVisible = true
+    }
+    private fun hideAllScreens() { appScreens.forEach { it.isVisible = false } }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (scannerScreen.isVisible) {
+                    stopScanner()
+                    showScreen(scanOriginId)
+                }
+                else if (route3dContainer.isVisible) showMobileDashboard()
+                else if (loginScreen.isVisible) showExitDialog()
+                else if (!mobileDashboard.isVisible) showMobileDashboard()
+                else showExitDialog()
+            }
+        })
+    }
+
+    private fun setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            // Dejamos el padding vertical en 0 para que el 3D llegue hasta los bordes
-            v.setPadding(systemBars.left, 0, systemBars.right, 0)
-            insets
+            val s = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(s.left, s.top, s.right, s.bottom); insets
         }
     }
 
     private fun showExitDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Confirmar salida")
-            .setMessage("¿Estás seguro de que deseas cerrar la aplicación?")
-            .setPositiveButton("Salir") { _, _ -> finish() }
-            .setNegativeButton("Cancelar", null)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Finalizar Sesión")
+            .setMessage("¿Estás seguro de que deseas salir de Almacén 3D?")
+            .setPositiveButton("SALIR") { _, _ -> finish() }
+            .setNegativeButton("CANCELAR", null)
             .show()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode != CAMERA_PERMISSION_REQUEST) return
-
-        val request = pendingWebPermissionRequest ?: return
-        pendingWebPermissionRequest = null
-
-        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            request.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE))
-        } else {
-            request.deny()
+    private fun cacheProducts(v: List<Product>) {
+        val json = JSONArray()
+        v.forEach { p ->
+            json.put(JSONObject().apply {
+                put("sku", p.sku); put("name", p.name); put("category", p.category); put("brand", p.brand); put("shelfId", p.shelfId)
+                put("width", p.width); put("height", p.height); put("depth", p.depth)
+                put("localX", p.localX); put("localY", p.localY); put("localZ", p.localZ)
+            })
         }
+        preferences.edit { putString("cache_products", json.toString()) }
+    }
+    
+    private fun loadCachedProducts(): List<Product> {
+        val raw = preferences.getString("cache_products", null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                Product(
+                    o.getString("sku"),
+                    o.optString("name", o.getString("sku")),
+                    o.optString("category", "Sin categoria"),
+                    o.optString("brand", "Sin marca"),
+                    o.getString("shelfId"),
+                    o.getDouble("width"),
+                    o.getDouble("height"),
+                    o.getDouble("depth"),
+                    localX = o.optDouble("localX", 0.0),
+                    localY = o.optDouble("localY", 0.0),
+                    localZ = o.optDouble("localZ", 0.0)
+                )
+            }
+        } catch (e: Exception) { emptyList() }
+    }
+    
+    private fun cacheShelves(v: List<Shelf>) {
+        val json = JSONArray()
+        v.forEach { s ->
+            json.put(JSONObject().apply {
+                put("id", s.id); put("label", s.label); put("sections", s.sections)
+                put("width", s.width); put("height", s.height); put("depth", s.depth); put("rotationY", s.rotationY)
+            })
+        }
+        preferences.edit { putString("cache_shelves", json.toString()) }
+    }
+    
+    private fun loadCachedShelves(): List<Shelf> {
+        val raw = preferences.getString("cache_shelves", null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                Shelf(
+                    o.getString("id"), 
+                    o.getString("label"), 
+                    o.getInt("sections"), 
+                    o.getDouble("width"), 
+                    o.getDouble("height"), 
+                    o.getDouble("depth"),
+                    o.optDouble("rotationY", 0.0)
+                )
+            }
+        } catch (e: Exception) { emptyList() }
+    }
+    
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel("updates", "Actualizaciones", NotificationManager.IMPORTANCE_DEFAULT)
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
+    }
+    
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1003)
+            }
+        }
+    }
+    
+    private fun showNativeNotification(title: String, message: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && 
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        val builder = NotificationCompat.Builder(this, "updates")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun onDestroy() { 
+        executor.shutdownNow()
+        cameraExecutor.shutdownNow()
+        routeWebView.destroy()
+        super.onDestroy() 
     }
 
     companion object {
-        private const val CAMERA_PERMISSION_REQUEST = 1001
+        private const val NATIVE_CAMERA_REQUEST = 1002
+        private const val PREF_SESSION_TOKEN = "session_token"
+        private const val PREF_LAST_EMAIL = "last_email"
+        private const val PREF_API_BASE_URL = "api_base_url"
     }
+}
+
+private enum class ProductFilter { ALL, UNCATEGORIZED, FIRST_SHELF }
+
+private fun Product.locationSummary(shelves: List<Shelf>): String {
+    val s = shelves.firstOrNull { it.id == shelfId }
+    return "${s?.label ?: "Estante $shelfId"} · ${sectionLabel(s)} · ${levelLabel(s)}"
+}
+
+private fun Product.sectionLabel(s: Shelf?): String {
+    val sec = s?.sections?.coerceAtLeast(1) ?: 1
+    if (sec == 1) return "Sec. única"
+    val w = s?.width?.takeIf { it > 0.0 } ?: return "Sec. 1"
+    return "Sección ${((localX + w/2)/w * sec).toInt() + 1}"
+}
+
+private fun Product.levelLabel(s: Shelf?): String {
+    val h = s?.height?.takeIf { it > 0.0 } ?: return "Nivel bajo"
+    val y = (localY/h).coerceIn(0.0, 1.0)
+    return when { y < 0.34 -> "Nivel bajo"; y < 0.67 -> "Nivel medio"; else -> "Nivel alto" }
 }

@@ -1,14 +1,61 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.Almacen3D" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:fontFamily">sans</item>
-        <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowNoTitle">true</item>
+        <!-- Colores Principales -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/transparent</item>
+        <item name="android:navigationBarColor">@color/transparent</item>
+
+        <!-- Tipografía y Formas -->
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Almacen.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Almacen.Medium</item>
+
+        <!-- Apariencia Inmersiva -->
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-        <item name="android:colorAccent">#5C7A47</item>
-        <item name="android:windowDisablePreview">true</item>
+
+        <!-- Temas de Componentes -->
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Almacen.MaterialAlertDialog</item>
     </style>
 
     <style name="Theme.Almacen3D" parent="Base.Theme.Almacen3D" />
+
+    <!-- Formas Personalizadas Profesionales -->
+    <style name="ShapeAppearance.Almacen.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.Almacen.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- Diálogos Material Design 3 Modernos -->
+    <style name="ThemeOverlay.Almacen.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="materialAlertDialogTitleTextStyle">@style/Text.Almacen.DialogTitle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/Text.Almacen.DialogBody</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Almacen.Button.TextButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Almacen.Button.TextButton.Negative</item>
+    </style>
+
+    <style name="Text.Almacen.DialogTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Text.Almacen.DialogBody" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <style name="Widget.Almacen.Button.TextButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    <style name="Widget.Almacen.Button.TextButton.Negative" parent="Widget.Almacen.Button.TextButton">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
 </resources>

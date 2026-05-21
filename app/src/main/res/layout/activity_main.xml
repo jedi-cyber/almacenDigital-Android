@@ -4,17 +4,993 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4EEE3"
+    android:background="@color/warehouse_background"
     android:clipToPadding="false"
     android:fitsSystemWindows="false"
     tools:context=".MainActivity">
 
-    <android.webkit.WebView
-        android:id="@+id/webView"
+    <ScrollView
+        android:id="@+id/loginScreen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/transparent"
+        android:fillViewport="true"
         android:overScrollMode="never"
-        android:scrollbars="none" />
+        android:background="@color/warehouse_background">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/profile_avatar_background"
+                android:gravity="center"
+                android:text="3D"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="Iniciar sesion" />
+
+            <TextView
+                android:id="@+id/loginStatusText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Inicia sesion para continuar." />
+
+            <EditText
+                android:id="@+id/loginEmailInput"
+                style="@style/MobileInput"
+                android:layout_marginTop="24dp"
+                android:hint="Correo"
+                android:inputType="textEmailAddress" />
+
+            <EditText
+                android:id="@+id/loginPasswordInput"
+                style="@style/MobileInput"
+                android:hint="Contraseña"
+                android:imeOptions="actionDone"
+                android:inputType="textPassword" />
+
+            <Button
+                android:id="@+id/loginButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:layout_width="match_parent"
+                android:text="Iniciar sesion" />
+
+            <TextView
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:text="El acceso se valida con la API local antes de cargar productos, perfil o rutas." />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/mobileDashboard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:background="@color/warehouse_background">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Dark Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/app_header_background"
+                android:paddingBottom="40dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@android:drawable/ic_menu_sort_by_size"
+                            android:tint="@color/white"
+                            tools:ignore="UseAppTint" />
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_alignParentEnd="true"
+                            android:src="@android:drawable/ic_popup_reminder"
+                            android:tint="@color/white"
+                            tools:ignore="UseAppTint" />
+                    </RelativeLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:text="Almacén 3D Móvil"
+                        android:textColor="@color/white"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="220dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Busca productos, consulta su ubicación y sigue una ruta guiada dentro del almacén."
+                        android:textColor="#CBD5E1"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="2dp" />
+
+                    <Button
+                        android:id="@+id/iniciarOperacionButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/blue_button_background"
+                        android:text="Iniciar operación"
+                        android:textColor="@color/white"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp" />
+
+                </LinearLayout>
+
+                <!-- Warehouse Illustration placeholder -->
+                <ImageView
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="60dp"
+                    android:layout_marginEnd="-20dp"
+                    android:src="@android:drawable/ic_dialog_map"
+                    android:alpha="0.2"
+                    android:tint="@color/white"
+                    tools:ignore="UseAppTint" />
+            </RelativeLayout>
+
+            <!-- Card Content Area with Rounded Top -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-30dp"
+                android:background="@drawable/dashboard_card_background"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Buscar producto"
+                    android:textColor="@color/warehouse_text"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:drawablePadding="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_search" />
+
+                <EditText
+                    android:id="@+id/homeSearchInput"
+                    style="@style/MobileInput"
+                    android:hint="SKU, nombre, categoria o marca"
+                    android:inputType="text" />
+
+                <Button
+                    android:id="@+id/homeScanButton"
+                    style="@style/MobileDashboardWhiteButton"
+                    android:text="Escanear SKU"
+                    android:drawableStart="@android:drawable/ic_menu_camera"
+                    android:paddingStart="40dp"
+                    android:paddingEnd="40dp" />
+
+                <Button
+                    android:id="@+id/homeSearchButton"
+                    style="@style/MobileDashboardBlueButton"
+                    android:text="Buscar y ver ruta 3D"
+                    android:drawableStart="@android:drawable/ic_menu_directions"
+                    android:paddingStart="40dp"
+                    android:paddingEnd="40dp" />
+
+                <Button
+                    android:id="@+id/homeAddProductButton"
+                    style="@style/MobileDashboardWhiteButton"
+                    android:text="Crear producto"
+                    android:drawableStart="@android:drawable/ic_input_add"
+                    android:paddingStart="40dp"
+                    android:paddingEnd="40dp" />
+
+                <LinearLayout
+                    android:id="@+id/homeStatusCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/status_info_background"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_dialog_info"
+                        android:tint="@color/secondary"
+                        tools:ignore="UseAppTint" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/homeStatusTextTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="994 productos disponibles."
+                            android:textColor="@color/secondary"
+                            android:textStyle="bold"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/homeStatusText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Busca uno para iniciar la ruta 3D."
+                            android:textColor="@color/warehouse_text_muted"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/homeLoadingIndicator"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="12dp"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Productos recientes"
+                        android:textColor="@color/warehouse_text"
+                        android:textStyle="bold"
+                        android:textSize="15sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="Ver todos"
+                        android:textColor="@color/secondary"
+                        android:textSize="13sp" />
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:id="@+id/homeResultsList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp" />
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+
+    <ScrollView
+        android:id="@+id/productsScreen"
+        style="@style/MobileScreenRoot"
+        android:background="@color/warehouse_background">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <Button
+                    android:id="@+id/productsBackButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/white_button_background"
+                    android:text="←"
+                    android:textColor="@color/warehouse_text"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:text="Productos"
+                    android:textColor="@color/warehouse_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:src="@android:drawable/ic_menu_sort_alphabetically"
+                    android:tint="@color/warehouse_text"
+                    tools:ignore="UseAppTint" />
+            </RelativeLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Encuentra productos por SKU o nombre y abre una ruta guiada hasta su ubicación."
+                android:textColor="@color/warehouse_text_muted"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/productsSearchInput"
+                style="@style/MobileInput"
+                android:hint="SKU, nombre, categoría o marca"
+                android:inputType="text"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="8dp" />
+
+            <Button
+                android:id="@+id/productsScanButton"
+                style="@style/MobileDashboardWhiteButton"
+                android:text="Escanear SKU"
+                android:drawableStart="@android:drawable/ic_menu_camera"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:overScrollMode="never"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/filterAllButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/blue_button_background"
+                        android:text="Todos"
+                        android:textColor="@color/white"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <Button
+                        android:id="@+id/filterUncategorizedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/dashboard_secondary_background"
+                        android:text="Sin categoría"
+                        android:textColor="@color/warehouse_text_muted"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <Button
+                        android:id="@+id/filterFirstShelfButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/dashboard_secondary_background"
+                        android:text="Primer estante"
+                        android:textColor="@color/warehouse_text_muted"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:text="Más filtros ▾"
+                        android:textColor="@color/secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <Button
+                android:id="@+id/addProductButton"
+                style="@style/MobileDashboardBlueButton"
+                android:text="Agregar producto"
+                android:drawableStart="@android:drawable/ic_input_add"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:id="@+id/productsStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Cargando productos..."
+                android:textColor="@color/warehouse_text_muted"
+                android:textSize="13sp" />
+
+            <ProgressBar
+                android:id="@+id/productsLoadingIndicator"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:layout_marginTop="10dp"
+                android:indeterminate="true"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/productsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/productFormScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/productFormBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="18dp"
+                android:text="Producto" />
+
+            <TextView
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="6dp"
+                android:text="Completa los datos del producto. La eliminacion se realiza solo desde la web." />
+
+            <EditText
+                android:id="@+id/productSkuInput"
+                style="@style/MobileInput"
+                android:hint="SKU"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/productNameInput"
+                style="@style/MobileInput"
+                android:hint="Nombre"
+                android:inputType="textCapWords" />
+
+            <EditText
+                android:id="@+id/productCategoryInput"
+                style="@style/MobileInput"
+                android:hint="Categoria (opcional)"
+                android:inputType="textCapWords" />
+
+            <EditText
+                android:id="@+id/productBrandInput"
+                style="@style/MobileInput"
+                android:hint="Marca (opcional)"
+                android:inputType="textCapWords" />
+
+            <EditText
+                android:id="@+id/productShelfInput"
+                style="@style/MobileInput"
+                android:hint="Estante"
+                android:inputType="textCapCharacters" />
+
+            <EditText
+                android:id="@+id/productWidthInput"
+                style="@style/MobileInput"
+                android:hint="Ancho"
+                android:inputType="numberDecimal" />
+
+            <EditText
+                android:id="@+id/productHeightInput"
+                style="@style/MobileInput"
+                android:hint="Alto"
+                android:inputType="numberDecimal" />
+
+            <EditText
+                android:id="@+id/productDepthInput"
+                style="@style/MobileInput"
+                android:hint="Profundidad"
+                android:inputType="numberDecimal" />
+
+            <Button
+                android:id="@+id/saveProductButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="@string/save" />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/productRouteScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/productRouteBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="18dp"
+                android:text="@string/route_title" />
+
+            <TextView
+                android:id="@+id/routeProductTitle"
+                style="@style/MobileDashboardCardTitle"
+                android:layout_marginTop="16dp"
+                android:text="@string/route_description" />
+
+            <TextView
+                android:id="@+id/routeLocationText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/status_info_background"
+                android:padding="12dp"
+                android:text="Selecciona un producto para ver la ruta." />
+
+            <LinearLayout
+                android:id="@+id/routeStepsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/openRoute3dButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="Abrir ruta 3D" />
+
+            <TextView
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/status_info_background"
+                android:padding="12dp"
+                android:text="La ruta 3D es la vista principal para llegar al producto. La gestion completa de estantes queda solo en la web." />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/shelvesScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/shelvesBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="18dp"
+                android:text="@string/shelves_title" />
+
+            <TextView
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="6dp"
+                android:text="Vista de consulta para ubicar estantes; la administracion queda en la web." />
+
+            <TextView
+                android:id="@+id/shelvesStatusText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/status_info_background"
+                android:padding="12dp"
+                android:text="Cargando estantes..." />
+
+            <LinearLayout
+                android:id="@+id/shelvesList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/reportsScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/reportsBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="18dp"
+                android:text="@string/reports_title" />
+
+            <TextView
+                android:id="@+id/reportsStatusText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/status_info_background"
+                android:padding="12dp"
+                android:text="Cargando resumen..." />
+
+            <Button
+                android:id="@+id/shareReportButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="Compartir reporte" />
+
+            <LinearLayout
+                android:id="@+id/reportsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/profileScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/profileBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/profileAvatarText"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:background="@drawable/profile_avatar_background"
+                    android:gravity="center"
+                    android:text="A"
+                    android:textColor="@color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/profileNameText"
+                        style="@style/MobileDashboardCardTitle"
+                        android:text="Usuario" />
+
+                    <TextView
+                        android:id="@+id/profileEmailText"
+                        style="@style/MobileDashboardCardBody"
+                        android:text="correo@almacen.local" />
+
+                    <TextView
+                        android:id="@+id/profileRoleText"
+                        style="@style/MobileDashboardCardBody"
+                        android:text="Rol: consulta" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/profileStatusText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/status_info_background"
+                android:padding="12dp"
+                android:text="Sincronizando cuenta..." />
+
+            <TextView
+                android:id="@+id/profileExpiresText"
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="10dp"
+                android:text="Sesion activa hasta: -" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="24dp"
+                android:text="Mi perfil" />
+
+            <EditText
+                android:id="@+id/profileNameInput"
+                style="@style/MobileInput"
+                android:hint="Nombre"
+                android:inputType="textCapWords" />
+
+            <EditText
+                android:id="@+id/profileEmailInput"
+                style="@style/MobileInput"
+                android:hint="Correo"
+                android:inputType="textEmailAddress" />
+
+            <Button
+                android:id="@+id/profileSaveButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="Guardar perfil" />
+
+            <Button
+                android:id="@+id/profileRefreshButton"
+                style="@style/MobileDashboardSecondaryButton"
+                android:text="Actualizar" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="28dp"
+                android:text="Sesiones" />
+
+            <LinearLayout
+                android:id="@+id/profileSessionsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/profileLogoutButton"
+                style="@style/MobileDashboardSecondaryButton"
+                android:text="Cerrar sesion" />
+
+            <Button
+                android:id="@+id/profileLogoutAllButton"
+                style="@style/MobileDashboardSecondaryButton"
+                android:text="Cerrar sesion en todos" />
+
+            <Button
+                android:id="@+id/profileReportsButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="Ver reportes nativos" />
+        </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/settingsScreen"
+        style="@style/MobileScreenRoot">
+
+        <LinearLayout style="@style/MobileScreenContent">
+
+            <Button
+                android:id="@+id/settingsBackButton"
+                style="@style/MobileBackButton"
+                android:text="@string/back" />
+
+            <TextView
+                style="@style/MobileScreenTitle"
+                android:layout_marginTop="18dp"
+                android:text="@string/settings_title" />
+
+            <EditText
+                android:id="@+id/apiUrlInput"
+                style="@style/MobileInput"
+                android:hint="URL de API"
+                android:inputType="textUri"
+                android:text="http://192.168.18.189/almacenDigital/api/" />
+
+            <Button
+                android:id="@+id/saveSettingsButton"
+                style="@style/MobileDashboardPrimaryButton"
+                android:text="@string/save" />
+        </LinearLayout>
+    </ScrollView>
+
+    <FrameLayout
+        android:id="@+id/scannerScreen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black"
+        android:visibility="gone">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/scannerPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:layout_gravity="center"
+            android:background="@drawable/scanner_overlay" />
+
+        <Button
+            android:id="@+id/scannerBackButton"
+            style="@style/MobileBackButton"
+            android:layout_margin="16dp"
+            android:text="@string/back" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="80dp"
+            android:text="Enfoca un código QR o de barras"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/route3dContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/warehouse_background"
+        android:visibility="gone">
+
+        <android.webkit.WebView
+            android:id="@+id/routeWebView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <Button
+            android:id="@+id/closeRoute3dButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="12dp"
+            android:background="@drawable/route_close_button_background"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="0dp"
+            android:text="X"
+            android:textColor="@color/warehouse_text"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bottom_nav_background"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:elevation="8dp">
+
+        <LinearLayout
+            android:id="@+id/navHomeButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_today"
+                android:tint="@color/secondary"
+                tools:ignore="UseAppTint" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Inicio"
+                android:textColor="@color/secondary"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navProductsButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_gallery"
+                android:tint="@color/warehouse_text_muted"
+                tools:ignore="UseAppTint" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Productos"
+                android:textColor="@color/warehouse_text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navShelvesButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_directions"
+                android:tint="@color/warehouse_text_muted"
+                tools:ignore="UseAppTint" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rutas"
+                android:textColor="@color/warehouse_text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navReportsButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_myplaces"
+                android:tint="@color/warehouse_text_muted"
+                tools:ignore="UseAppTint" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Perfil"
+                android:textColor="@color/warehouse_text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
 
 </FrameLayout>
+
+
+
+

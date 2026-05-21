@@ -1,12 +1,19 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.Almacen3D" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:fontFamily">sans</item>
-        <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowNoTitle">true</item>
+        <!-- Colores Principales en Modo Noche -->
+        <item name="colorPrimary">@color/secondary_light</item>
+        <item name="colorOnPrimary">@color/primary_dark</item>
+        <item name="colorPrimaryContainer">@color/primary</item>
+
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <item name="android:windowBackground">#020617</item> <!-- Slate 950 -->
+        <item name="android:statusBarColor">@color/transparent</item>
+        <item name="android:navigationBarColor">@color/transparent</item>
+
+        <!-- Apariencia Inmersiva para Modo Noche -->
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-        <item name="android:colorAccent">#7DD3FC</item>
-        <item name="android:windowDisablePreview">true</item>
     </style>
 </resources>

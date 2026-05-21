@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">Almacen 3D</string>
+    <string name="dashboard_title">Almacen 3D Movil</string>
+    <string name="dashboard_subtitle">Busca productos, consulta su ubicacion y sigue una ruta guiada dentro del almacen.</string>
+    <string name="products_title">Productos</string>
+    <string name="products_description">Buscar, crear, editar y abrir ruta guiada.</string>
+    <string name="shelves_title">Estantes</string>
+    <string name="shelves_description">Consultar ubicaciones del almacen. La edicion se realiza en la web.</string>
+    <string name="reports_title">Reportes</string>
+    <string name="reports_description">Resumenes de ocupacion e inventario.</string>
+    <string name="route_title">Ruta guiada</string>
+    <string name="route_description">Encuentra el producto dentro del almacen.</string>
+    <string name="settings_title">Configuracion</string>
+    <string name="settings_description">API, servidor y ajustes de la aplicacion.</string>
+    <string name="open">Abrir</string>
+    <string name="back">Volver</string>
+    <string name="save">Guardar</string>
+    <string name="add_product">Agregar producto</string>
+    <string name="edit">Editar</string>
+    <string name="details">Detalle</string>
+    <string name="route">Ruta</string>
+    <string name="close">Cerrar</string>
+    <string name="coming_soon_title">Pantalla preparada</string>
+    <string name="coming_soon_message">Esta accion ya tiene entrada movil. La conexion completa con datos se implementara en la siguiente fase.</string>
 </resources>
