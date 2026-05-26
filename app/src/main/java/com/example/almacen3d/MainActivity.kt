@@ -200,6 +200,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.homeVerTodosButton)?.setOnClickListener { hapticFeedback(); showScreen(R.id.productsScreen); loadProducts(); updateBottomNav(R.id.navProductsButton) }
 
         findViewById<View>(R.id.loginButton).setOnClickListener { hapticFeedback(); loginFromNativeForm() }
+        findViewById<View>(R.id.loginConfigureServerButton).setOnClickListener { hapticFeedback(); showSettingsScreen() }
 
         findViewById<EditText>(R.id.loginPasswordInput).setOnEditorActionListener { _, _, _ ->
             loginFromNativeForm()
@@ -264,7 +265,11 @@ class MainActivity : AppCompatActivity() {
         
         findViewById<View>(R.id.saveSettingsButton).setOnClickListener {
             hapticFeedback()
-            val apiUrl = findViewById<EditText>(R.id.apiUrlInput).text.toString()
+            val apiUrl = findViewById<EditText>(R.id.apiUrlInput).text.toString().trim()
+            if (!apiUrl.startsWith("http://") && !apiUrl.startsWith("https://")) {
+                showAppMessage("La URL debe empezar con http:// o https://")
+                return@setOnClickListener
+            }
             apiClient.setBaseUrl(apiUrl)
             preferences.edit {
                 putString(PREF_API_BASE_URL, apiUrl)
@@ -280,10 +285,13 @@ class MainActivity : AppCompatActivity() {
         if (!savedApiUrl.isNullOrBlank()) {
             apiClient.setBaseUrl(savedApiUrl)
             findViewById<EditText>(R.id.apiUrlInput).setText(savedApiUrl)
+        } else if (isApiConfigured()) {
+            // No saved URL but the build shipped a default: show it so it can be edited.
+            findViewById<EditText>(R.id.apiUrlInput).setText(apiClient.currentBaseUrl())
         }
         val token = preferences.getString(PREF_SESSION_TOKEN, null)
         if (token.isNullOrBlank()) {
-            showLoginScreen()
+            if (isApiConfigured()) showLoginScreen() else showLoginScreen(getString(R.string.settings_not_configured))
             return
         }
         apiClient.setSessionToken(token)
@@ -306,7 +314,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun isApiConfigured(): Boolean = apiClient.currentBaseUrl().isNotBlank()
+
     private fun loginFromNativeForm() {
+        if (!isApiConfigured()) {
+            setLoginStatus(getString(R.string.settings_not_configured), StatusKind.WARNING)
+            showSettingsScreen()
+            return
+        }
         val emailInput = findViewById<EditText>(R.id.loginEmailInput)
         val passwordInput = findViewById<EditText>(R.id.loginPasswordInput)
         val email = emailInput.text.toString().trim()
@@ -1058,6 +1073,13 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(id).isVisible = true
     }
     private fun hideAllScreens() { appScreens.forEach { it.isVisible = false } }
+
+    // Settings is reachable before login so the server URL can be configured on first launch.
+    private fun showSettingsScreen() {
+        hideAllScreens()
+        findViewById<View>(R.id.bottomNavigation).isVisible = apiClient.hasSession()
+        findViewById<View>(R.id.settingsScreen).isVisible = true
+    }
 
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

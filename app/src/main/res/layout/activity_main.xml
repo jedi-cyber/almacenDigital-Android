@@ -67,6 +67,13 @@
                 android:layout_width="match_parent"
                 android:text="Iniciar sesion" />
 
+            <Button
+                android:id="@+id/loginConfigureServerButton"
+                style="@style/MobileBackButton"
+                android:layout_width="match_parent"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_configure_server" />
+
             <TextView
                 style="@style/MobileDashboardCardBody"
                 android:layout_marginTop="18dp"
@@ -815,12 +822,16 @@
                 android:layout_marginTop="18dp"
                 android:text="@string/settings_title" />
 
+            <TextView
+                style="@style/MobileDashboardCardBody"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_api_help" />
+
             <EditText
                 android:id="@+id/apiUrlInput"
                 style="@style/MobileInput"
-                android:hint="URL de API"
-                android:inputType="textUri"
-                android:text="http://192.168.18.189/almacenDigital/api/" />
+                android:hint="@string/settings_api_hint"
+                android:inputType="textUri" />
 
             <Button
                 android:id="@+id/saveSettingsButton"

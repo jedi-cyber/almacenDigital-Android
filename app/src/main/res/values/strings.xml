@@ -12,6 +12,10 @@
     <string name="route_description">Encuentra el producto dentro del almacen.</string>
     <string name="settings_title">Configuracion</string>
     <string name="settings_description">API, servidor y ajustes de la aplicacion.</string>
+    <string name="settings_api_help">Escribe la direccion del servidor. Usa la IP local de tu PC en la misma red Wi-Fi (en el emulador usa 10.0.2.2).</string>
+    <string name="settings_api_hint">http://192.168.1.50/almacenDigital/api/</string>
+    <string name="settings_configure_server">Configurar servidor</string>
+    <string name="settings_not_configured">Configura la URL del servidor en Ajustes antes de iniciar sesion.</string>
     <string name="open">Abrir</string>
     <string name="back">Volver</string>
     <string name="save">Guardar</string>

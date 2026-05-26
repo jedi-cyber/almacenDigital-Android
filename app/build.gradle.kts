@@ -18,6 +18,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Default API base URL baked into the build. Override per machine via the
+        // `apiBaseUrl` Gradle property (gradle.properties or -PapiBaseUrl=...).
+        // Empty means the app requires configuration in its Settings screen on first launch.
+        buildConfigField(
+            "String",
+            "DEFAULT_API_BASE_URL",
+            "\"${project.findProperty("apiBaseUrl") ?: ""}\""
+        )
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
