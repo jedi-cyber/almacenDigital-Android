@@ -39,6 +39,10 @@ class WarehouseApiClient(
 
     fun hasSession(): Boolean = !sessionToken.isNullOrBlank()
 
+    fun currentToken(): String? = sessionToken
+
+    fun currentBaseUrl(): String = baseUrl.trimEnd('/')
+
     fun productsUrl(): String = "${baseUrl}productos.php"
 
     fun shelvesUrl(): String = "${baseUrl}config.php"

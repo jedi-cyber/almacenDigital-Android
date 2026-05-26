@@ -1,8 +1,8 @@
-function mt(e){const o=pt(e),c=new Blob([o],{type:"text/html;charset=utf-8"}),i=URL.createObjectURL(c);window.open(i,"_blank"),setTimeout(()=>URL.revokeObjectURL(i),1e4)}function l(e){return Number(e.toFixed(2)).toString()}function d(e){return String(e??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function st(e,o,c,i){const s=Math.round(e/(i.width/Math.max(1,Math.round(i.width/.5))))+1,a=Math.round(c/(i.depth/Math.max(1,Math.round(i.depth/.5))))+1,u=Math.round(o/(i.height/Math.max(1,i.sections??1)))+1;return`Col ${s} · Fila ${a} · Nivel ${u}`}function j(e){return e>70?"#ff6b6b":e>35?"#ffd45c":"#00e5a0"}function lt(e,o){const u=e.length*38+20,v=e.map((p,f)=>{const y=o.filter(z=>z.shelfId===p.id),C=p.width*p.height*p.depth,R=y.reduce((z,S)=>z+S.item.width*S.item.height*S.item.depth,0),B=C>0?R/C*100:0,h=Math.max(2,384*B/100),x=f*38+10,k=j(B),O=p.label??p.id,A=O.length>8?O.slice(0,7)+"…":O;return`
+function me(t){const o=pe(t),c=new Blob([o],{type:"text/html;charset=utf-8"}),i=URL.createObjectURL(c);window.open(i,"_blank"),setTimeout(()=>URL.revokeObjectURL(i),1e4)}function l(t){return Number(t.toFixed(2)).toString()}function d(t){return String(t??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function se(t,o,c,i){const s=Math.round(t/(i.width/Math.max(1,Math.round(i.width/.5))))+1,a=Math.round(c/(i.depth/Math.max(1,Math.round(i.depth/.5))))+1,u=Math.round(o/(i.height/Math.max(1,i.sections??1)))+1;return`Col ${s} · Fila ${a} · Nivel ${u}`}function j(t){return t>70?"#ff6b6b":t>35?"#ffd45c":"#00e5a0"}function le(t,o){const u=t.length*38+20,v=t.map((p,f)=>{const y=o.filter(z=>z.shelfId===p.id),C=p.width*p.height*p.depth,R=y.reduce((z,S)=>z+S.item.width*S.item.height*S.item.depth,0),B=C>0?R/C*100:0,h=Math.max(2,384*B/100),x=f*38+10,$=j(B),O=p.label??p.id,A=O.length>8?O.slice(0,7)+"…":O;return`
       <text x="50" y="${x+28/2+5}" text-anchor="end" fill="#64748b" font-size="11" font-family="'Segoe UI',sans-serif">${A}</text>
-      <rect x="56" y="${x}" width="${h}" height="28" rx="5" fill="${k}" opacity="0.85"/>
-      <text x="${56+h+8}" y="${x+28/2+5}" fill="${k}" font-size="12" font-weight="700" font-family="'Segoe UI',sans-serif">${B.toFixed(0)}%</text>
-    `}).join("");return`<svg viewBox="0 0 520 ${u}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;display:block">${v}</svg>`}function nt(e,o){const c=o>0?e/o*100:0,i=60,s=90,a=90,u=2*Math.PI*i,v=c/100*u,p=j(c);return`
+      <rect x="56" y="${x}" width="${h}" height="28" rx="5" fill="${$}" opacity="0.85"/>
+      <text x="${56+h+8}" y="${x+28/2+5}" fill="${$}" font-size="12" font-weight="700" font-family="'Segoe UI',sans-serif">${B.toFixed(0)}%</text>
+    `}).join("");return`<svg viewBox="0 0 520 ${u}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;display:block">${v}</svg>`}function ne(t,o){const c=o>0?t/o*100:0,i=60,s=90,a=90,u=2*Math.PI*i,v=c/100*u,p=j(c);return`
   <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" style="width:180px;height:180px;flex-shrink:0">
     <circle cx="${s}" cy="${a}" r="${i}" fill="none" stroke="#1e2a3a" stroke-width="18"/>
     <circle cx="${s}" cy="${a}" r="${i}" fill="none" stroke="${p}" stroke-width="18"
@@ -11,50 +11,50 @@ function mt(e){const o=pt(e),c=new Blob([o],{type:"text/html;charset=utf-8"}),i=
     <text x="${s}" y="${a-8}" text-anchor="middle" fill="${p}" font-size="22" font-weight="700" font-family="'Segoe UI',sans-serif">${c.toFixed(1)}%</text>
     <text x="${s}" y="${a+14}" text-anchor="middle" fill="#64748b" font-size="10" font-family="'Segoe UI',sans-serif">OCUPACIÓN</text>
     <circle cx="28" cy="148" r="6" fill="${p}"/>
-    <text x="38" y="153" fill="#e2e8f0" font-size="10" font-family="'Segoe UI',sans-serif">Usado ${l(e)} m³</text>
+    <text x="38" y="153" fill="#e2e8f0" font-size="10" font-family="'Segoe UI',sans-serif">Usado ${l(t)} m³</text>
     <circle cx="28" cy="165" r="6" fill="#1e2a3a"/>
-    <text x="38" y="170" fill="#64748b" font-size="10" font-family="'Segoe UI',sans-serif">Libre ${l(o-e)} m³</text>
-  </svg>`}function H(e,o){const c=new Map;return e.forEach(i=>{const s=o(i)?.trim()||"Sin definir",a=s.toLowerCase(),u=c.get(a)??{name:s,count:0};u.count+=1,c.set(a,u)}),[...c.values()].sort((i,s)=>s.count-i.count||i.name.localeCompare(s.name,"es"))}function D(e){const o=Math.max(1,Math.floor(e.sections??1)),i=[0,...e.boardOffsets&&e.boardOffsets.length>0?e.boardOffsets.map(s=>s*e.height):Array.from({length:o-1},(s,a)=>(a+1)*e.height/o),e.height].sort((s,a)=>s-a);return i.slice(0,-1).map((s,a)=>({section:a+1,label:e.sectionLabels?.[a]||`Piso ${a+1}`,min:s,max:i[a+1]}))}function V(e,o){const c=D(e),i=o.localPosition.y;return c.find((s,a)=>i>=s.min&&(i<s.max||a===c.length-1))?.section??1}function ct(e,o){const c=o.some(u=>u.id===e.shelfId),i=e.item.width>0&&e.item.height>0&&e.item.depth>0,s=Number.isFinite(e.localPosition.x)&&Number.isFinite(e.localPosition.y)&&Number.isFinite(e.localPosition.z),a=!!e.item.category?.trim()&&!!e.item.brand?.trim();return!c||!i||!s||!e.item.name?.trim()||!a}function dt(e){const o=String(e??"");return/[",\n]/.test(o)?`"${o.replace(/"/g,'""')}"`:o}function pt(e){const{shelves:o,productsBySku:c,generatedAt:i,history:s=[]}=e,a=[...c.values()],u=new Set(s.filter(t=>t.action==="movido").map(t=>t.sku)),v=new Map;s.forEach(t=>{v.has(t.sku)||v.set(t.sku,t.createdAt)});const p=a.length,f=o.reduce((t,r)=>t+r.width*r.height*r.depth,0),y=a.reduce((t,r)=>t+r.item.width*r.item.height*r.item.depth,0),C=f-y,R=f>0?y/f*100:0,B=i.toLocaleString("es-PE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),h=o.map(t=>{const r=a.filter(I=>I.shelfId===t.id),m=t.width*t.height*t.depth,b=r.reduce((I,$)=>I+$.item.width*$.item.height*$.item.depth,0),g=m>0?b/m*100:0;return{shelf:t,prods:r,vol:m,used:b,pct:g}}),x=h.reduce((t,r)=>r.pct>t.pct?r:t,h[0]),k=h.reduce((t,r)=>r.pct<t.pct?r:t,h[0]),A=[...a].sort((t,r)=>{const m=t.item.width*t.item.height*t.item.depth;return r.item.width*r.item.height*r.item.depth-m}).slice(0,3).map((t,r)=>{const m=t.item.width*t.item.height*t.item.depth;return`<div class="top-item"><span class="top-rank">${["🥇","🥈","🥉"][r]}</span><span class="top-name">${t.item.name||t.item.sku}</span><span class="top-vol">${l(m)} m³</span></div>`}).join(""),z=H(a,t=>t.item.category),S=H(a,t=>t.item.brand),L=a.filter(t=>ct(t,o)),N=a.filter(t=>!t.item.imageUrl),T=z.map(t=>`<option value="${d(t.name)}">${d(t.name)}</option>`).join(""),W=S.map(t=>`<option value="${d(t.name)}">${d(t.name)}</option>`).join(""),Z=o.map(t=>`<option value="${d(t.id)}">${d(t.id)} · ${d(t.label??t.id)}</option>`).join(""),q=[["SKU","Nombre","Categoria","Marca","Estante","Piso","Ancho","Alto","Profundidad","Volumen","X","Y","Z"],...a.map(t=>{const r=o.find(g=>g.id===t.shelfId),m=r?V(r,t):"",b=t.item.width*t.item.height*t.item.depth;return[t.item.sku,t.item.name,t.item.category??"Sin categoria",t.item.brand??"Sin marca",t.shelfId,m,l(t.item.width),l(t.item.height),l(t.item.depth),l(b),l(t.localPosition.x),l(t.localPosition.y),l(t.localPosition.z)]})].map(t=>t.map(dt).join(",")).join(`
-`),G=z.slice(0,5).map(t=>`<div class="intel-row"><span class="intel-label">${t.name}</span><span class="intel-value">${t.count} prod.</span></div>`).join(""),K=S.slice(0,5).map(t=>`<div class="intel-row"><span class="intel-label">${t.name}</span><span class="intel-value">${t.count} prod.</span></div>`).join(""),Y=L.slice(0,8).map(t=>`<div class="intel-row"><span class="intel-label">${t.item.sku}</span><span class="intel-value warn">${t.item.name||"Sin nombre"} · ${t.shelfId||"Sin estante"}</span></div>`).join(""),_=nt(y,f),J=lt(o,a),X=o.map(t=>`<button class="tab-btn" onclick="document.getElementById('shelf-${t.id}').scrollIntoView({behavior:'smooth'})">${t.id}</button>`).join(""),Q=o.map(t=>{const r=a.filter(n=>n.shelfId===t.id),m=t.width*t.height*t.depth,b=r.reduce((n,w)=>n+w.item.width*w.item.height*w.item.depth,0),g=m>0?b/m*100:0,I=Math.max(1,Math.floor(t.sections??1)),$=j(g),tt=g>70?'<span class="status-badge danger">⚠️ Lleno</span>':g>35?'<span class="status-badge warn">~ Moderado</span>':'<span class="status-badge ok">✔ Disponible</span>',et=g<10&&r.length>0?'<div class="shelf-alert">💡 Espacio libre &gt; 90% — considera reubicar productos aquí.</div>':"",at=b>0?(r.length/m).toFixed(2):"0",rt=D(t).map(n=>{const w=r.filter(E=>V(t,E)===n.section),F=t.width*t.depth*Math.max(0,n.max-n.min),U=w.reduce((E,M)=>E+M.item.width*M.item.height*M.item.depth,0),P=F>0?U/F*100:0;return`
+    <text x="38" y="170" fill="#64748b" font-size="10" font-family="'Segoe UI',sans-serif">Libre ${l(o-t)} m³</text>
+  </svg>`}function L(t,o){const c=new Map;return t.forEach(i=>{const s=o(i)?.trim()||"Sin definir",a=s.toLowerCase(),u=c.get(a)??{name:s,count:0};u.count+=1,c.set(a,u)}),[...c.values()].sort((i,s)=>s.count-i.count||i.name.localeCompare(s.name,"es"))}function V(t){const o=Math.max(1,Math.floor(t.sections??1)),i=[0,...t.boardOffsets&&t.boardOffsets.length>0?t.boardOffsets.map(s=>s*t.height):Array.from({length:o-1},(s,a)=>(a+1)*t.height/o),t.height].sort((s,a)=>s-a);return i.slice(0,-1).map((s,a)=>({section:a+1,label:t.sectionLabels?.[a]||`Piso ${a+1}`,min:s,max:i[a+1]}))}function H(t,o){const c=V(t),i=o.localPosition.y;return c.find((s,a)=>i>=s.min&&(i<s.max||a===c.length-1))?.section??1}function ce(t,o){const c=o.some(u=>u.id===t.shelfId),i=t.item.width>0&&t.item.height>0&&t.item.depth>0,s=Number.isFinite(t.localPosition.x)&&Number.isFinite(t.localPosition.y)&&Number.isFinite(t.localPosition.z),a=!!t.item.category?.trim()&&!!t.item.brand?.trim();return!c||!i||!s||!t.item.name?.trim()||!a}function de(t){const o=String(t??"");return/[",\n]/.test(o)?`"${o.replace(/"/g,'""')}"`:o}function pe(t){const{shelves:o,productsBySku:c,generatedAt:i,history:s=[]}=t,a=[...c.values()],u=new Set(s.filter(e=>e.action==="movido").map(e=>e.sku)),v=new Map;s.forEach(e=>{v.has(e.sku)||v.set(e.sku,e.createdAt)});const p=a.length,f=o.reduce((e,r)=>e+r.width*r.height*r.depth,0),y=a.reduce((e,r)=>e+r.item.width*r.item.height*r.item.depth,0),C=f-y,R=f>0?y/f*100:0,B=i.toLocaleString("es-PE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),h=o.map(e=>{const r=a.filter(I=>I.shelfId===e.id),m=e.width*e.height*e.depth,b=r.reduce((I,k)=>I+k.item.width*k.item.height*k.item.depth,0),g=m>0?b/m*100:0;return{shelf:e,prods:r,vol:m,used:b,pct:g}}),x=h.reduce((e,r)=>r.pct>e.pct?r:e,h[0]),$=h.reduce((e,r)=>r.pct<e.pct?r:e,h[0]),A=[...a].sort((e,r)=>{const m=e.item.width*e.item.height*e.item.depth;return r.item.width*r.item.height*r.item.depth-m}).slice(0,3).map((e,r)=>{const m=e.item.width*e.item.height*e.item.depth;return`<div class="top-item"><span class="top-rank">${["🥇","🥈","🥉"][r]}</span><span class="top-name">${e.item.name||e.item.serialNumber||"Sin nombre"}</span><span class="top-vol">${l(m)} m³</span></div>`}).join(""),z=L(a,e=>e.item.category),S=L(a,e=>e.item.brand),N=a.filter(e=>ce(e,o)),D=a.filter(e=>!e.item.imageUrl),T=z.map(e=>`<option value="${d(e.name)}">${d(e.name)}</option>`).join(""),W=S.map(e=>`<option value="${d(e.name)}">${d(e.name)}</option>`).join(""),Z=o.map(e=>`<option value="${d(e.id)}">${d(e.id)} · ${d(e.label??e.id)}</option>`).join(""),q=[["Numero de serie","Nombre","Categoria","Marca","Estante","Piso","Ancho","Alto","Profundidad","Volumen","X","Y","Z"],...a.map(e=>{const r=o.find(g=>g.id===e.shelfId),m=r?H(r,e):"",b=e.item.width*e.item.height*e.item.depth;return[e.item.serialNumber??"",e.item.name,e.item.category??"Sin categoria",e.item.brand??"Sin marca",e.shelfId,m,l(e.item.width),l(e.item.height),l(e.item.depth),l(b),l(e.localPosition.x),l(e.localPosition.y),l(e.localPosition.z)]})].map(e=>e.map(de).join(",")).join(`
+`),G=z.slice(0,5).map(e=>`<div class="intel-row"><span class="intel-label">${e.name}</span><span class="intel-value">${e.count} prod.</span></div>`).join(""),K=S.slice(0,5).map(e=>`<div class="intel-row"><span class="intel-label">${e.name}</span><span class="intel-value">${e.count} prod.</span></div>`).join(""),Y=N.slice(0,8).map(e=>`<div class="intel-row"><span class="intel-label">${e.item.serialNumber||"Sin serie"}</span><span class="intel-value warn">${e.item.name||"Sin nombre"} · ${e.shelfId||"Sin estante"}</span></div>`).join(""),_=ne(y,f),J=le(o,a),X=o.map(e=>`<button class="tab-btn" onclick="document.getElementById('shelf-${e.id}').scrollIntoView({behavior:'smooth'})">${e.id}</button>`).join(""),Q=o.map(e=>{const r=a.filter(n=>n.shelfId===e.id),m=e.width*e.height*e.depth,b=r.reduce((n,w)=>n+w.item.width*w.item.height*w.item.depth,0),g=m>0?b/m*100:0,I=Math.max(1,Math.floor(e.sections??1)),k=j(g),ee=g>70?'<span class="status-badge danger">⚠️ Lleno</span>':g>35?'<span class="status-badge warn">~ Moderado</span>':'<span class="status-badge ok">✔ Disponible</span>',te=g<10&&r.length>0?'<div class="shelf-alert">💡 Espacio libre &gt; 90% — considera reubicar productos aquí.</div>':"",ae=b>0?(r.length/m).toFixed(2):"0",re=V(e).map(n=>{const w=r.filter(E=>H(e,E)===n.section),F=e.width*e.depth*Math.max(0,n.max-n.min),U=w.reduce((E,M)=>E+M.item.width*M.item.height*M.item.depth,0),P=F>0?U/F*100:0;return`
         <div class="floor-row">
           <span>${n.label}</span>
           <div class="floor-bar"><i style="width:${Math.min(P,100).toFixed(1)}%;background:${j(P)}"></i></div>
           <strong>${w.length} prod. · ${P.toFixed(1)}%</strong>
-        </div>`}).join(""),ot=r.length===0?'<tr><td colspan="6" class="empty-row">Sin productos registrados en este estante.</td></tr>':r.map(n=>{const w=n.item.width*n.item.height*n.item.depth,F=st(n.localPosition.x,n.localPosition.y,n.localPosition.z,t),U=n.item.category||"Sin categoria",P=n.item.brand||"Sin marca",E=u.has(n.item.sku),M=!!n.item.imageUrl,it=v.get(n.item.sku)??"";return`
-	          <tr data-report-product-row data-shelf="${d(n.shelfId)}" data-category="${d(U)}" data-brand="${d(P)}" data-moved="${E?"true":"false"}" data-has-image="${M?"true":"false"}" data-last-activity="${d(it)}">
-	            <td><span class="sku-badge">${d(n.item.sku)}</span></td>
+        </div>`}).join(""),oe=r.length===0?'<tr><td colspan="6" class="empty-row">Sin productos registrados en este estante.</td></tr>':r.map(n=>{const w=n.item.width*n.item.height*n.item.depth,F=se(n.localPosition.x,n.localPosition.y,n.localPosition.z,e),U=n.item.category||"Sin categoria",P=n.item.brand||"Sin marca",E=u.has(n.item.sku),M=!!n.item.imageUrl,ie=v.get(n.item.sku)??"";return`
+	          <tr data-report-product-row data-shelf="${d(n.shelfId)}" data-category="${d(U)}" data-brand="${d(P)}" data-moved="${E?"true":"false"}" data-has-image="${M?"true":"false"}" data-last-activity="${d(ie)}">
+		            <td><span class="sku-badge">${d(n.item.serialNumber||"Sin serie")}</span></td>
 	            <td>${d(n.item.name||"—")}</td>
 	            <td class="catalog-cell">${d(U)}<br><small>${d(P)}</small></td>
 	            <td class="dim-cell">${l(n.item.width)} × ${l(n.item.height)} × ${l(n.item.depth)}</td>
 	            <td><span class="vol-chip">${l(w)} m³</span></td>
 	            <td class="pos-cell">${d(F)}${E?'<br><small class="moved-chip">Movido</small>':""}${M?"":'<br><small class="missing-chip">Sin imagen</small>'}</td>
 	          </tr>`}).join("");return`
-	    <div class="shelf-card" id="shelf-${d(t.id)}" data-report-shelf-card data-shelf="${d(t.id)}" data-occupancy="${g.toFixed(2)}">
+	    <div class="shelf-card" id="shelf-${d(e.id)}" data-report-shelf-card data-shelf="${d(e.id)}" data-occupancy="${g.toFixed(2)}">
       <div class="shelf-card-head">
-        <div class="shelf-id-badge">${t.id}</div>
+        <div class="shelf-id-badge">${e.id}</div>
         <div class="shelf-info">
-          <h2 class="shelf-name">${t.label??t.id} ${tt}</h2>
-          <p class="shelf-meta">${l(t.width)} × ${l(t.height)} × ${l(t.depth)} m &nbsp;·&nbsp; ${I} piso${I!==1?"s":""} &nbsp;·&nbsp; ${r.length} producto${r.length!==1?"s":""} &nbsp;·&nbsp; densidad: ${at} prod/m³</p>
+          <h2 class="shelf-name">${e.label??e.id} ${ee}</h2>
+          <p class="shelf-meta">${l(e.width)} × ${l(e.height)} × ${l(e.depth)} m &nbsp;·&nbsp; ${I} piso${I!==1?"s":""} &nbsp;·&nbsp; ${r.length} producto${r.length!==1?"s":""} &nbsp;·&nbsp; densidad: ${ae} prod/m³</p>
         </div>
         <div class="occupancy-ring">
           <svg viewBox="0 0 36 36">
             <circle class="ring-bg" cx="18" cy="18" r="15.9"/>
-            <circle class="ring-fg" cx="18" cy="18" r="15.9" stroke="${$}" stroke-dasharray="${g.toFixed(1)} 100" transform="rotate(-90 18 18)"/>
+            <circle class="ring-fg" cx="18" cy="18" r="15.9" stroke="${k}" stroke-dasharray="${g.toFixed(1)} 100" transform="rotate(-90 18 18)"/>
           </svg>
-          <span class="ring-label" style="color:${$}">${g.toFixed(0)}%</span>
+          <span class="ring-label" style="color:${k}">${g.toFixed(0)}%</span>
           <span class="ring-sub">OCP.</span>
         </div>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(g,100).toFixed(1)}%;background:${$}"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(g,100).toFixed(1)}%;background:${k}"></div></div>
       <p class="vol-label">${l(b)} / ${l(m)} m³ &nbsp;·&nbsp; libre: ${l(m-b)} m³</p>
       <div class="floor-occupancy">
         <strong>Ocupación por piso</strong>
-        ${rt}
+        ${re}
       </div>
-      ${et}
+      ${te}
       <table class="product-table">
-        <thead><tr><th>SKU</th><th>NOMBRE</th><th>CAT./MARCA</th><th>DIMENSIONES (M)</th><th>VOLUMEN</th><th>UBICACIÓN</th></tr></thead>
-        <tbody>${ot}</tbody>
+	        <thead><tr><th>SERIE</th><th>NOMBRE</th><th>CAT./MARCA</th><th>DIMENSIONES (M)</th><th>VOLUMEN</th><th>UBICACIÓN</th></tr></thead>
+        <tbody>${oe}</tbody>
       </table>
     </div>`}).join("");return`<!DOCTYPE html>
 <html lang="es">
@@ -225,7 +225,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;pa
 	  </div>
 	  <div class="kpi-card">
 	    <p class="kpi-label">Datos Incompletos</p>
-	    <p class="kpi-value ${L.length>0?"danger":"ok"}">${L.length}</p>
+	    <p class="kpi-value ${N.length>0?"danger":"ok"}">${N.length}</p>
 	    <p class="kpi-sub">productos por revisar</p>
 	  </div>
 	</div>
@@ -251,15 +251,15 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;pa
       <span class="intel-label">🔥 Más ocupado</span>
       <span class="intel-value danger">${x.shelf.label??x.shelf.id} (${x.pct.toFixed(0)}%)</span>
     </div>`:""}
-    ${k?`
+    ${$?`
     <div class="intel-row">
       <span class="intel-label">🧊 Más vacío</span>
-      <span class="intel-value ok">${k.shelf.label??k.shelf.id} (${k.pct.toFixed(0)}%)</span>
+      <span class="intel-value ok">${$.shelf.label??$.shelf.id} (${$.pct.toFixed(0)}%)</span>
     </div>`:""}
-    ${h.map(t=>`
+    ${h.map(e=>`
     <div class="intel-row">
-      <span class="intel-label">${t.shelf.id}</span>
-      <span class="intel-value ${t.pct>70?"danger":t.pct>35?"warn":"ok"}">${t.pct.toFixed(1)}% · ${l(t.used)}/${l(t.vol)} m³</span>
+      <span class="intel-label">${e.shelf.id}</span>
+      <span class="intel-value ${e.pct>70?"danger":e.pct>35?"warn":"ok"}">${e.pct.toFixed(1)}% · ${l(e.used)}/${l(e.vol)} m³</span>
     </div>`).join("")}
   </div>
 	  <div class="analysis-card">
@@ -322,7 +322,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;pa
 	  <div class="filter-actions">
 	    <button type="button" id="clear-report-filters">Limpiar</button>
 	  </div>
-	  <p class="filter-summary" id="filter-summary">${p} productos visibles · ${N.length} sin imagen · ${u.size} movidos</p>
+	  <p class="filter-summary" id="filter-summary">${p} productos visibles · ${D.length} sin imagen · ${u.size} movidos</p>
 	</section>
 	<div class="tabs">${X}</div>
 ${Q}
@@ -409,4 +409,4 @@ ${Q}
 	}
 	<\/script>
 	</body>
-	</html>`}export{mt as openReportWindow};
+	</html>`}export{me as openReportWindow};

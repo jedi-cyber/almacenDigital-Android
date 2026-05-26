@@ -95,6 +95,7 @@ class MainActivity : AppCompatActivity() {
     private var scanOriginId: Int = R.id.mobileDashboard
     private var currentPageIndex = 0
     private var currentUserRole: String = "consulta"
+    private var routeTokenInjectedForUrl: String? = null
 
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -237,7 +238,7 @@ class MainActivity : AppCompatActivity() {
 
         
         findViewById<View>(R.id.openRoute3dButton).setOnClickListener { hapticFeedback(); openRoute3d() }
-        findViewById<View>(R.id.closeRoute3dButton).setOnClickListener { hapticFeedback(); showMobileDashboard() }
+        findViewById<View>(R.id.closeRoute3dButton).setOnClickListener { hapticFeedback(); closeRoute3d() }
         findViewById<View>(R.id.shareReportButton).setOnClickListener { hapticFeedback(); shareReport() }
         findViewById<View>(R.id.scannerBackButton).setOnClickListener { hapticFeedback(); stopScanner(); showScreen(scanOriginId) }
         findViewById<View>(R.id.profileRefreshButton).setOnClickListener { hapticFeedback(); loadProfile() }
@@ -966,6 +967,10 @@ class MainActivity : AppCompatActivity() {
         routeWebView.settings.apply {
             javaScriptEnabled = true; domStorageEnabled = true
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            cacheMode = WebSettings.LOAD_DEFAULT
+            mediaPlaybackRequiresUserGesture = true
+            loadsImagesAutomatically = true
+            blockNetworkImage = false
         }
         val assetLoader = WebViewAssetLoader.Builder().addPathHandler("/local_assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
         routeWebView.webViewClient = object : WebViewClient() {
@@ -973,14 +978,64 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 return request.url.host != "appassets.androidplatform.net"
             }
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                injectNativeSessionIntoRouteViewer(view, url)
+            }
         }
     }
 
     private fun openRoute3d() {
         val p = selectedRouteProduct ?: return
+        if (!apiClient.hasSession()) {
+            showLoginScreen("Inicia sesion para ver la ruta 3D.")
+            return
+        }
+        val token = apiClient.currentToken()
+        if (token.isNullOrBlank()) {
+            showLoginScreen("Tu sesion expiro. Inicia sesion para ver la ruta 3D.")
+            return
+        }
         hideAllScreens(); findViewById<View>(R.id.bottomNavigation).isVisible = false
         route3dContainer.isVisible = true
-        routeWebView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html?mode=mobile-route&sku=${URLEncoder.encode(p.sku, "UTF-8")}")
+        routeTokenInjectedForUrl = null
+        val sku = URLEncoder.encode(p.sku, "UTF-8")
+        val encodedToken = URLEncoder.encode(token, "UTF-8")
+        val apiBase = URLEncoder.encode(apiClient.currentBaseUrl(), "UTF-8")
+        routeWebView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html?mode=mobile-route&sku=$sku&nativeToken=$encodedToken&nativeApiBase=$apiBase")
+        routeWebView.onResume()
+    }
+
+    private fun closeRoute3d() {
+        routeWebView.stopLoading()
+        routeWebView.onPause()
+        routeWebView.loadUrl("about:blank")
+        routeTokenInjectedForUrl = null
+        showMobileDashboard()
+    }
+
+    private fun injectNativeSessionIntoRouteViewer(view: WebView, url: String) {
+        if (!url.contains("mode=mobile-route")) return
+        val token = apiClient.currentToken()
+        if (token.isNullOrBlank()) {
+            showLoginScreen("Tu sesion expiro. Inicia sesion para ver la ruta 3D.")
+            return
+        }
+        if (routeTokenInjectedForUrl == url) return
+        routeTokenInjectedForUrl = url
+        val quotedToken = JSONObject.quote(token)
+        view.evaluateJavascript(
+            """
+            (function() {
+              localStorage.setItem('almacen-digital-session-token', $quotedToken);
+              if (!window.__almacenNativeRouteSessionReady) {
+                window.__almacenNativeRouteSessionReady = true;
+                location.reload();
+              }
+            })();
+            """.trimIndent(),
+            null
+        )
     }
 
     private fun showMobileDashboard() {
@@ -1011,7 +1066,7 @@ class MainActivity : AppCompatActivity() {
                     stopScanner()
                     showScreen(scanOriginId)
                 }
-                else if (route3dContainer.isVisible) showMobileDashboard()
+                else if (route3dContainer.isVisible) closeRoute3d()
                 else if (loginScreen.isVisible) showExitDialog()
                 else if (!mobileDashboard.isVisible) showMobileDashboard()
                 else showExitDialog()
@@ -1127,6 +1182,20 @@ class MainActivity : AppCompatActivity() {
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), builder.build())
+    }
+
+    override fun onPause() {
+        if (this::routeWebView.isInitialized) {
+            routeWebView.onPause()
+        }
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (this::routeWebView.isInitialized && this::route3dContainer.isInitialized && route3dContainer.isVisible) {
+            routeWebView.onResume()
+        }
     }
 
     override fun onDestroy() { 
