@@ -12,6 +12,7 @@ class WarehouseRepository(private val apiClient: WarehouseApiClient) {
     fun saveProduct(product: Product): Result<Unit> = runCatching { apiClient.saveProduct(product) }
     fun currentSession(): Result<UserSession> = runCatching { apiClient.currentSession() }
     fun fetchActiveSessions(): Result<List<ActiveSession>> = runCatching { apiClient.fetchActiveSessions() }
-    fun updateProfile(name: String, email: String): Result<UserSession> = runCatching { apiClient.updateProfile(name, email) }
+    fun updateProfile(name: String, email: String, currentPassword: String = "", newPassword: String = ""): Result<UserSession> =
+        runCatching { apiClient.updateProfile(name, email, currentPassword, newPassword) }
     fun logout(allDevices: Boolean): Result<Unit> = runCatching { apiClient.logout(allDevices) }
 }

@@ -244,9 +244,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.scannerBackButton).setOnClickListener { hapticFeedback(); stopScanner(); showScreen(scanOriginId) }
         findViewById<View>(R.id.profileRefreshButton).setOnClickListener { hapticFeedback(); loadProfile() }
         findViewById<View>(R.id.profileSaveButton).setOnClickListener { hapticFeedback(); saveProfile() }
+        findViewById<View>(R.id.profileChangePasswordButton).setOnClickListener { hapticFeedback(); changePasswordFromForm() }
         findViewById<View>(R.id.profileLogoutButton).setOnClickListener { hapticFeedback(); logoutFromMobile(false) }
-        findViewById<View>(R.id.profileLogoutAllButton).setOnClickListener { hapticFeedback(); logoutFromMobile(true) }
-        findViewById<View>(R.id.profileReportsButton).setOnClickListener { hapticFeedback(); showScreen(R.id.reportsScreen); loadReports() }
+        findViewById<View>(R.id.profileLogoutAllButton).setOnClickListener { hapticFeedback(); confirmLogoutAllDevices() }
         
         findViewById<EditText>(R.id.productsSearchInput).addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -727,15 +727,15 @@ class MainActivity : AppCompatActivity() {
                 sessionResult
                     .onSuccess { session ->
                         currentUserRole = session.user.role
-                        findViewById<TextView>(R.id.profileAvatarText).text =
-                            session.user.name.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+                        findViewById<TextView>(R.id.profileAvatarText).text = avatarInitialsFor(session.user.name)
                         findViewById<TextView>(R.id.profileNameText).text = session.user.name
                         findViewById<TextView>(R.id.profileEmailText).text = session.user.email
-                        findViewById<TextView>(R.id.profileRoleText).text = "Rol: ${session.user.role}"
-                        findViewById<TextView>(R.id.profileExpiresText).text = "Sesion activa hasta: ${session.expiresAt}"
+                        findViewById<TextView>(R.id.profileRoleText).text = session.user.role.ifBlank { "consulta" }
+                        findViewById<TextView>(R.id.profileExpiresText).text =
+                            "Sesion activa hasta: ${formatSessionTimestamp(session.expiresAt)}"
                         findViewById<EditText>(R.id.profileNameInput).setText(session.user.name)
                         findViewById<EditText>(R.id.profileEmailInput).setText(session.user.email)
-                        setStatus(R.id.profileStatusText, "Perfil nativo sincronizado", StatusKind.SUCCESS)
+                        setStatus(R.id.profileStatusText, "Perfil sincronizado", StatusKind.SUCCESS)
                     }
                     .onFailure { error ->
                         setStatus(R.id.profileStatusText, error.message ?: "No se pudo cargar el perfil", StatusKind.ERROR)
@@ -756,11 +756,14 @@ class MainActivity : AppCompatActivity() {
             return
         }
         sessions.forEach { session ->
-            val label = if (session.current) "Este dispositivo" else "Otro dispositivo"
+            val label = if (session.current) "Este dispositivo · activo" else "Otro dispositivo"
+            val device = describeUserAgent(session.userAgent)
             list.addView(
                 cardFactory.createCard(
                     label,
-                    "IP: ${session.ipAddress}\nUltimo uso: ${session.lastSeenAt}\nExpira: ${session.expiresAt}"
+                    "${device} · ${session.ipAddress}\n" +
+                        "Ultimo uso: ${formatSessionTimestamp(session.lastSeenAt)}\n" +
+                        "Expira: ${formatSessionTimestamp(session.expiresAt)}"
                 )
             )
         }
@@ -773,12 +776,20 @@ class MainActivity : AppCompatActivity() {
             showAppMessage("Nombre y correo son obligatorios")
             return
         }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            setStatus(R.id.profileStatusText, "El correo no tiene un formato valido.", StatusKind.WARNING)
+            return
+        }
+        // If the email changed, the API requires the current password. Read it from the
+        // Seguridad section so the user only needs to fill one place.
+        val currentPassword = findViewById<EditText>(R.id.profileCurrentPasswordInput).text.toString()
         setStatus(R.id.profileStatusText, "Guardando perfil...", StatusKind.LOADING)
         executor.execute {
-            repository.updateProfile(name, email)
+            repository.updateProfile(name, email, currentPassword, "")
                 .onSuccess {
                     runOnUiThread {
                         showAppMessage("Perfil actualizado")
+                        findViewById<EditText>(R.id.profileCurrentPasswordInput).setText("")
                         loadProfile()
                     }
                 }
@@ -788,6 +799,117 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
         }
+    }
+
+    private fun changePasswordFromForm() {
+        val currentPassword = findViewById<EditText>(R.id.profileCurrentPasswordInput).text.toString()
+        val newPassword = findViewById<EditText>(R.id.profileNewPasswordInput).text.toString()
+        val confirmPassword = findViewById<EditText>(R.id.profileConfirmPasswordInput).text.toString()
+        if (currentPassword.isBlank() || newPassword.isBlank() || confirmPassword.isBlank()) {
+            setStatus(R.id.profileStatusText, "Completa los tres campos de contrasena.", StatusKind.WARNING)
+            return
+        }
+        if (newPassword.length < 6) {
+            setStatus(R.id.profileStatusText, "La nueva contrasena debe tener al menos 6 caracteres.", StatusKind.WARNING)
+            return
+        }
+        if (newPassword != confirmPassword) {
+            setStatus(R.id.profileStatusText, "La nueva contrasena y su confirmacion no coinciden.", StatusKind.WARNING)
+            return
+        }
+        // Send the existing name/email so the API receives a complete payload.
+        val name = findViewById<EditText>(R.id.profileNameInput).text.toString().trim()
+        val email = findViewById<EditText>(R.id.profileEmailInput).text.toString().trim()
+        setStatus(R.id.profileStatusText, "Cambiando contrasena...", StatusKind.LOADING)
+        executor.execute {
+            repository.updateProfile(name, email, currentPassword, newPassword)
+                .onSuccess {
+                    runOnUiThread {
+                        showAppMessage("Contrasena actualizada")
+                        findViewById<EditText>(R.id.profileCurrentPasswordInput).setText("")
+                        findViewById<EditText>(R.id.profileNewPasswordInput).setText("")
+                        findViewById<EditText>(R.id.profileConfirmPasswordInput).setText("")
+                        loadProfile()
+                    }
+                }
+                .onFailure { error ->
+                    runOnUiThread {
+                        setStatus(R.id.profileStatusText, error.message ?: "No se pudo cambiar la contrasena.", StatusKind.ERROR)
+                    }
+                }
+        }
+    }
+
+    private fun confirmLogoutAllDevices() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Cerrar sesion en todos los dispositivos")
+            .setMessage("Se cerraran todas las sesiones de tu cuenta. Tendras que iniciar sesion otra vez en cada dispositivo.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Cerrar todas") { _, _ -> logoutFromMobile(true) }
+            .show()
+    }
+
+    private fun avatarInitialsFor(name: String): String {
+        val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        return when {
+            parts.isEmpty() -> "U"
+            parts.size == 1 -> parts[0].first().uppercaseChar().toString()
+            else -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
+        }
+    }
+
+    private fun describeUserAgent(userAgent: String): String {
+        if (userAgent.isBlank() || userAgent.equals("Dispositivo", ignoreCase = true)) return "Dispositivo"
+        val os = when {
+            userAgent.contains("Android", ignoreCase = true) -> "Android"
+            userAgent.contains("iPhone", ignoreCase = true) || userAgent.contains("iPad", ignoreCase = true) -> "iOS"
+            userAgent.contains("Windows", ignoreCase = true) -> "Windows"
+            userAgent.contains("Mac OS", ignoreCase = true) || userAgent.contains("Macintosh", ignoreCase = true) -> "macOS"
+            userAgent.contains("Linux", ignoreCase = true) -> "Linux"
+            else -> "Dispositivo"
+        }
+        val browser = when {
+            userAgent.contains("Edg/", ignoreCase = true) -> "Edge"
+            userAgent.contains("Chrome", ignoreCase = true) -> "Chrome"
+            userAgent.contains("Firefox", ignoreCase = true) -> "Firefox"
+            userAgent.contains("Safari", ignoreCase = true) -> "Safari"
+            userAgent.startsWith("almacen", ignoreCase = true) -> "App nativa"
+            else -> ""
+        }
+        return if (browser.isBlank()) os else "$browser en $os"
+    }
+
+    private fun formatSessionTimestamp(raw: String): String {
+        if (raw.isBlank() || raw == "-") return "-"
+        val instant = parseServerInstant(raw) ?: return raw
+        val diffMs = instant.toEpochMilli() - System.currentTimeMillis()
+        val absMs = kotlin.math.abs(diffMs)
+        val minutes = absMs / 60_000
+        val hours = minutes / 60
+        val days = hours / 24
+        val relative = when {
+            minutes < 1L -> if (diffMs >= 0) "en instantes" else "hace instantes"
+            minutes < 60L -> if (diffMs >= 0) "en $minutes min" else "hace $minutes min"
+            hours < 24L -> if (diffMs >= 0) "en $hours h" else "hace $hours h"
+            days < 30L -> if (diffMs >= 0) "en $days d" else "hace $days d"
+            else -> null
+        }
+        val absolute = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+            .format(java.util.Date(instant.toEpochMilli()))
+        return if (relative != null) "$absolute ($relative)" else absolute
+    }
+
+    private fun parseServerInstant(raw: String): java.time.Instant? {
+        // Server returns timestamps like "2026-05-26 13:32:41" (MySQL DATETIME) or ISO-8601.
+        return runCatching { java.time.Instant.parse(raw) }
+            .recoverCatching {
+                val normalized = raw.trim().replace(' ', 'T')
+                java.time.LocalDateTime
+                    .parse(normalized)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant()
+            }
+            .getOrNull()
     }
 
     private fun logoutFromMobile(allDevices: Boolean) {
