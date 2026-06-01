@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private val preferences: SharedPreferences by lazy {
-        getSharedPreferences("almacen_mobile_cache", Context.MODE_PRIVATE)
+        getSharedPreferences("almacen_mobile_cache", MODE_PRIVATE)
     }
     
     private lateinit var mobileDashboard: View
@@ -96,12 +96,6 @@ class MainActivity : AppCompatActivity() {
     private var currentPageIndex = 0
     private var currentUserRole: String = "consulta"
     private var routeTokenInjectedForUrl: String? = null
-
-    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            showAppMessage("Captura de SKU recibida")
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,6 +156,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyMobileProductOnlyMode() { }
+
 
 
     private fun setupBottomNavigation() {
@@ -394,15 +389,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEmptyProductsState() {
-        val message = "Catalogo cargado correctamente. Aun no hay productos registrados."
+        val message = getString(R.string.empty_catalog_message)
         setStatus(R.id.homeStatusText, message, StatusKind.EMPTY)
         setStatus(R.id.productsStatusText, message, StatusKind.EMPTY)
         findViewById<LinearLayout>(R.id.homeResultsList).apply {
             removeAllViews()
             addView(cardFactory.createCard(
-                title = "Sin productos registrados",
-                body = "Cuando agregues productos, apareceran aqui con acceso directo a su ruta 3D.",
-                primaryActionText = "Crear producto",
+                title = getString(R.string.no_products_registered_title),
+                body = getString(R.string.no_products_registered_body),
+                primaryActionText = getString(R.string.add_product),
                 primaryAction = {
                     clearProductForm()
                     showScreen(R.id.productFormScreen)
@@ -412,9 +407,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<LinearLayout>(R.id.productsList).apply {
             removeAllViews()
             addView(cardFactory.createCard(
-                title = "Inventario vacio",
-                body = "No hay productos para buscar todavia. Registra el primero para activar busqueda y rutas.",
-                primaryActionText = "Crear producto",
+                title = getString(R.string.empty_inventory_title),
+                body = getString(R.string.empty_inventory_body),
+                primaryActionText = getString(R.string.add_product),
                 primaryAction = {
                     clearProductForm()
                     showScreen(R.id.productFormScreen)
@@ -423,28 +418,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setProductsRetryVisible(visible: Boolean) {
+    private fun setProductsRetryVisible() {
         // No longer using these buttons in the redesigned UI
     }
 
     private fun showProductsConnectionError(error: Throwable?) {
         val detail = error?.message?.takeIf { it.isNotBlank() }?.let { " Detalle: $it" } ?: ""
-        val message = "No se pudo conectar con la API de productos.$detail La lista no esta vacia necesariamente; la carga fallo."
+        val message = getString(R.string.status_sync_error) + detail
         setStatus(R.id.homeStatusText, message, StatusKind.ERROR)
         setStatus(R.id.productsStatusText, message, StatusKind.ERROR)
-        setProductsRetryVisible(true)
+        setProductsRetryVisible()
         findViewById<LinearLayout>(R.id.homeResultsList).removeAllViews()
         findViewById<LinearLayout>(R.id.productsList).removeAllViews()
         setProductsLoadingVisible(false)
     }
 
     private fun loadProducts() {
-        setProductsRetryVisible(false)
+        setProductsRetryVisible()
         setProductsLoadingVisible(true)
-        val loadingText = "Cargando almacén y productos..."
+        val loadingText = getString(R.string.loading_warehouse_products)
         setStatus(R.id.productsStatusText, loadingText, StatusKind.LOADING)
         
-        findViewById<TextView>(R.id.homeStatusTextTitle)?.text = "Sincronizando..."
+        findViewById<TextView>(R.id.homeStatusTextTitle)?.text = getString(R.string.synchronizing)
         findViewById<TextView>(R.id.homeStatusText)?.text = loadingText
         
         executor.execute {
@@ -458,8 +453,8 @@ class MainActivity : AppCompatActivity() {
                         else { 
                             renderProducts()
                             renderHomeResults()
-                            findViewById<TextView>(R.id.homeStatusTextTitle)?.text = "${loaded.size} productos disponibles."
-                            findViewById<TextView>(R.id.homeStatusText)?.text = "Busca uno para iniciar la ruta 3D."
+                            findViewById<TextView>(R.id.homeStatusTextTitle)?.text = getString(R.string.products_available_format, loaded.size)
+                            findViewById<TextView>(R.id.homeStatusText)?.text = getString(R.string.search_product_to_start_route)
                         }
                     }
                 }
@@ -469,7 +464,7 @@ class MainActivity : AppCompatActivity() {
                         setProductsLoadingVisible(false)
                         if (products.isNotEmpty()) {
                             renderProducts()
-                            setStatus(R.id.productsStatusText, "Modo offline: Cargado desde caché", StatusKind.EMPTY)
+                            setStatus(R.id.productsStatusText, getString(R.string.status_offline_cache), StatusKind.EMPTY)
                         } else {
                             showProductsConnectionError(error)
                         }
@@ -499,7 +494,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (visibleProducts.isEmpty()) {
-            setStatus(R.id.productsStatusText, "No hay coincidencias para esta busqueda.", StatusKind.EMPTY)
+            setStatus(R.id.productsStatusText, getString(R.string.status_no_matches), StatusKind.EMPTY)
             return
         }
 
@@ -510,7 +505,8 @@ class MainActivity : AppCompatActivity() {
         val startIndex = currentPageIndex * pageSize
         val paginated = visibleProducts.drop(startIndex).take(pageSize)
         
-        setStatus(R.id.productsStatusText, "Página ${currentPageIndex + 1} de $totalPages (${visibleProducts.size} productos)", StatusKind.SUCCESS)
+        setStatus(R.id.productsStatusText, getString(R.string.pagination_format, currentPageIndex + 1, totalPages, visibleProducts.size), StatusKind.SUCCESS)
+
         
         paginated.forEach { product ->
             list.addView(
@@ -593,14 +589,14 @@ class MainActivity : AppCompatActivity() {
             .take(6)
 
         if (visibleProducts.isEmpty()) {
-            setStatus(R.id.homeStatusText, "Producto no encontrado. Prueba con el SKU, nombre, categoria o marca.", StatusKind.EMPTY)
+            setStatus(R.id.homeStatusText, getString(R.string.home_search_not_found), StatusKind.EMPTY)
             return
         }
 
         val status = if (query.isBlank()) {
-            "${products.size} productos disponibles. Busca uno para iniciar la ruta 3D."
+            getString(R.string.products_available_format, products.size) + " " + getString(R.string.search_product_to_start_route)
         } else {
-            "${visibleProducts.size} coincidencia(s). Toca Ruta 3D para navegar."
+            getString(R.string.home_search_found_format, visibleProducts.size)
         }
         setStatus(R.id.homeStatusText, status, StatusKind.SUCCESS)
 
@@ -624,22 +620,6 @@ class MainActivity : AppCompatActivity() {
         openRoute3d()
     }
     
-    private fun showProductRoute(product: Product) {
-        selectedRouteProduct = product
-        val shelf = shelves.firstOrNull { it.id == product.shelfId }
-        findViewById<TextView>(R.id.routeProductTitle).text = product.name
-        findViewById<TextView>(R.id.routeLocationText).text = "Ubicación: ${product.locationSummary(shelves)}"
-
-        val steps = buildRouteSteps(product, shelf)
-        val list = findViewById<LinearLayout>(R.id.routeStepsList)
-        list.removeAllViews()
-        steps.forEachIndexed { index, step ->
-            list.addView(cardFactory.createCard("Paso ${index + 1}", step))
-        }
-
-        showScreen(R.id.productRouteScreen)
-    }
-
     private fun buildRouteSteps(product: Product, shelf: Shelf?): List<String> {
         val shelfName = shelf?.let { "${it.id} · ${it.label}" } ?: "Estante ${product.shelfId}"
         return listOf(
@@ -651,7 +631,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadShelves() {
-        setStatus(R.id.shelvesStatusText, "Sincronizando estantes...", StatusKind.LOADING)
+        setStatus(R.id.shelvesStatusText, getString(R.string.shelves_syncing), StatusKind.LOADING)
         executor.execute {
             repository.fetchShelves()
                 .onSuccess { loaded ->
@@ -664,9 +644,9 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (shelves.isNotEmpty()) {
                             renderShelves()
-                            setStatus(R.id.shelvesStatusText, "Offline: Usando datos locales", StatusKind.EMPTY)
+                            setStatus(R.id.shelvesStatusText, getString(R.string.status_offline_shelves), StatusKind.EMPTY)
                         } else {
-                            setStatus(R.id.shelvesStatusText, "Error de sincronización", StatusKind.ERROR)
+                            setStatus(R.id.shelvesStatusText, getString(R.string.status_sync_error), StatusKind.ERROR)
                         }
                     }
                 }
@@ -678,11 +658,11 @@ class MainActivity : AppCompatActivity() {
         list.removeAllViews()
 
         if (shelves.isEmpty()) {
-            setStatus(R.id.shelvesStatusText, "Sin estantes registrados", StatusKind.EMPTY)
+            setStatus(R.id.shelvesStatusText, getString(R.string.no_shelves_registered), StatusKind.EMPTY)
             return
         }
 
-        setStatus(R.id.shelvesStatusText, "${shelves.size} unidades de almacenamiento", StatusKind.SUCCESS)
+        setStatus(R.id.shelvesStatusText, getString(R.string.shelves_count_format, shelves.size), StatusKind.SUCCESS)
         shelves.forEach { shelf ->
             list.addView(
                 cardFactory.createCard(
@@ -693,33 +673,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadReports() {
-        setStatus(R.id.reportsStatusText, "Generando reporte ejecutivo...", StatusKind.LOADING)
-        executor.execute {
-            val result = runCatching {
-                val p = apiClient.fetchProducts()
-                val s = apiClient.fetchShelves()
-                p to s
-            }
-            runOnUiThread {
-                result.onSuccess { (p, s) -> products = p; shelves = s; renderReports() }
-                    .onFailure { products = loadCachedProducts(); shelves = loadCachedShelves(); renderReports() }
-            }
-        }
-    }
-
-    private fun renderReports() {
-        val list = findViewById<LinearLayout>(R.id.reportsList)
-        list.removeAllViews()
-        val totalVolume = products.sumOf { it.width * it.height * it.depth }
-        setStatus(R.id.reportsStatusText, "Reporte actualizado", StatusKind.SUCCESS)
-        list.addView(cardFactory.createCard("Inventario Total", "${products.size} productos registrados en sistema."))
-        list.addView(cardFactory.createCard("Capacidad", "${shelves.size} estantes operativos."))
-        list.addView(cardFactory.createCard("Ocupación Estática", "Volumen total de carga: ${totalVolume.cleanText()} cm³."))
-    }
-
     private fun loadProfile() {
-        setStatus(R.id.profileStatusText, "Sincronizando cuenta...", StatusKind.LOADING)
+        setStatus(R.id.profileStatusText, getString(R.string.profile_syncing), StatusKind.LOADING)
         executor.execute {
             val sessionResult = repository.currentSession()
             val sessionsResult = repository.fetchActiveSessions()
@@ -735,10 +690,10 @@ class MainActivity : AppCompatActivity() {
                             "Sesion activa hasta: ${formatSessionTimestamp(session.expiresAt)}"
                         findViewById<EditText>(R.id.profileNameInput).setText(session.user.name)
                         findViewById<EditText>(R.id.profileEmailInput).setText(session.user.email)
-                        setStatus(R.id.profileStatusText, "Perfil sincronizado", StatusKind.SUCCESS)
+                        setStatus(R.id.profileStatusText, getString(R.string.profile_synced), StatusKind.SUCCESS)
                     }
                     .onFailure { error ->
-                        setStatus(R.id.profileStatusText, error.message ?: "No se pudo cargar el perfil", StatusKind.ERROR)
+                        setStatus(R.id.profileStatusText, error.message ?: getString(R.string.profile_sync_error), StatusKind.ERROR)
                     }
 
                 sessionsResult
@@ -752,7 +707,7 @@ class MainActivity : AppCompatActivity() {
         val list = findViewById<LinearLayout>(R.id.profileSessionsList)
         list.removeAllViews()
         if (sessions.isEmpty()) {
-            list.addView(cardFactory.createCard("Sesiones activas", "No se pudo obtener el detalle de sesiones."))
+            list.addView(cardFactory.createCard(getString(R.string.active_sessions_title), getString(R.string.active_sessions_error)))
             return
         }
         sessions.forEach { session ->
@@ -1139,7 +1094,12 @@ class MainActivity : AppCompatActivity() {
         val sku = URLEncoder.encode(p.sku, "UTF-8")
         val encodedToken = URLEncoder.encode(token, "UTF-8")
         val apiBase = URLEncoder.encode(apiClient.currentBaseUrl(), "UTF-8")
-        routeWebView.loadUrl("https://appassets.androidplatform.net/local_assets/index.html?mode=mobile-route&sku=$sku&nativeToken=$encodedToken&nativeApiBase=$apiBase")
+        
+        // Use the native base URL from the API client as the source of truth
+        val actualApiBase = apiClient.currentBaseUrl()
+        val url = "https://appassets.androidplatform.net/local_assets/index.html?mode=mobile-route&sku=$sku&nativeToken=$encodedToken&nativeApiBase=$apiBase&apiBase=${URLEncoder.encode(actualApiBase, "UTF-8")}"
+        
+        routeWebView.loadUrl(url)
         routeWebView.onResume()
     }
 
@@ -1161,10 +1121,12 @@ class MainActivity : AppCompatActivity() {
         if (routeTokenInjectedForUrl == url) return
         routeTokenInjectedForUrl = url
         val quotedToken = JSONObject.quote(token)
+        val quotedApiBase = JSONObject.quote(apiClient.currentBaseUrl())
         view.evaluateJavascript(
             """
             (function() {
               localStorage.setItem('almacen-digital-session-token', $quotedToken);
+              localStorage.setItem('almacen-digital-api-base', $quotedApiBase);
               if (!window.__almacenNativeRouteSessionReady) {
                 window.__almacenNativeRouteSessionReady = true;
                 location.reload();
