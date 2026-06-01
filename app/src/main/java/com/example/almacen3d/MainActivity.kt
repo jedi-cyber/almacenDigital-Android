@@ -601,14 +601,18 @@ class MainActivity : AppCompatActivity() {
         setStatus(R.id.homeStatusText, status, StatusKind.SUCCESS)
 
         visibleProducts.forEach { product ->
+            val meta = listOf(
+                "SKU ${product.sku}",
+                product.category,
+                product.brand,
+                product.locationSummary(shelves)
+            ).filter { it.isNotBlank() }.joinToString(" · ")
             list.addView(
-                cardFactory.createCard(
-                    title = product.name,
-                    body = "SKU: ${product.sku}\n${product.category} · ${product.brand}\n${product.locationSummary(shelves)}",
-                    primaryActionText = "Ruta 3D",
-                    primaryAction = { openProductRoute3d(product) },
-                    secondaryActionText = "Editar",
-                    secondaryAction = { fillProductForm(product); showScreen(R.id.productFormScreen) }
+                cardFactory.createSuggestionRow(
+                    primary = product.name,
+                    secondary = meta,
+                    query = query,
+                    onClick = { openProductRoute3d(product) }
                 )
             )
         }
