@@ -37,13 +37,20 @@ La aplicación requiere conectarse a una base de datos centralizada:
 ### 3. Instalación de la Aplicación
 
 #### Opción A: Desde Código Fuente
-1.  Clona el repositorio: `git clone https://github.com/USUARIO/ALMACEN-3D.git`.
+1.  Clona el repositorio: `git clone https://github.com/jedi-cyber/almacenDigital-Android.git`.
 2.  Abre la carpeta en **Android Studio**.
 3.  Sincroniza Gradle y ejecuta la app en un dispositivo físico o emulador.
 
-#### Opción B: Generar APK
+#### Opción B: Generar APK (Desarrolladores)
 1.  En Android Studio, ve a `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`.
 2.  Una vez generado, instala el archivo `app-debug.apk` en tu dispositivo.
+
+#### Opción C: Descarga Directa (Releases)
+Si solo deseas instalar la aplicación sin compilar el código:
+1.  Ve a la sección de **[Releases](https://github.com/jedi-cyber/almacenDigital-Android.git/releases)** en este repositorio de GitHub.
+2.  Busca la versión más reciente (etiquetada como `Latest`).
+3.  En el apartado **Assets**, descarga el archivo `.apk` (ej: `almacen3d-v1.0.apk`).
+4.  Transfiere el archivo a tu dispositivo Android e instálalo (asegúrate de permitir la instalación de fuentes desconocidas si es necesario).
 
 ### 4. Configuración Final
 1.  Abre la app e ignora el error de conexión inicial.
