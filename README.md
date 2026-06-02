@@ -1,76 +1,71 @@
-# Almacén 3D - Guía de Instalación y Configuración
+# Almacén 3D - Sistema de Gestión Logística Inteligente
 
-Este repositorio contiene el código de la **aplicación móvil nativa Android** para el sistema de gestión de almacenes con visor 3D interactivo. Para que el sistema funcione correctamente, es necesario configurar el backend y el visor web.
+![Android](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?logo=kotlin&logoColor=white)
+![Three.js](https://img.shields.io/badge/3D_Engine-Three.js-black?logo=three.js&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Production--Ready-success)
+
+**Almacén 3D** es una solución tecnológica avanzada diseñada para transformar la gestión de inventarios tradicional en una experiencia visual e interactiva. Combina la robustez de una aplicación nativa Android con la potencia de un motor gráfico 3D para optimizar la localización y el flujo de mercancías dentro de centros de distribución.
 
 ---
 
-## 🛠️ Prerrequisitos
+## 🌟 Características Principales
 
-Antes de comenzar, asegúrate de tener instalado:
-*   **Android Studio** (Ladybug o superior).
-*   **Git** para clonar el repositorio.
-*   Un servidor local (**XAMPP**, WAMP) o un hosting para la API (PHP).
-*   Un navegador moderno para el visor 3D.
+*   **Visor 3D Interactivo:** Visualización espacial del almacén para localizar productos con precisión.
+*   **Ruta Guiada:** Sistema que traza el camino más corto hacia el producto seleccionado.
+*   **Escáner QR/Barras:** Integración nativa con la cámara para identificación rápida de SKUs.
+*   **Sincronización en la Nube:** API REST para gestión de datos en tiempo real.
+*   **Modo Resiliente:** Caché local que permite el funcionamiento en zonas con baja cobertura.
+*   **Interfaz Profesional:** Diseño moderno basado en Material Design 3 optimizado para terminales industriales.
 
 ---
 
 ## 🚀 Guía de Instalación para Terceros
 
-### 1. Clonar el Proyecto
-Copia el código en tu máquina local:
-```bash
-git clone https://github.com/USUARIO/ALMACEN-3D-ANDROID.git
-```
+### 1. Requisitos Previos
+*   **Android Studio** (Ladybug o superior).
+*   **Servidor Web:** XAMPP, WAMP o un Hosting con soporte PHP/MySQL.
+*   **Dispositivo Android:** Android 10 (API 29) o superior.
 
-### 2. Configuración del Backend (API y Base de Datos)
-La aplicación móvil no funciona sola; requiere conectarse a una base de datos MySQL a través de una API PHP.
+### 2. Configuración del Backend (API)
+La aplicación requiere conectarse a una base de datos centralizada:
+1.  **Base de Datos:** Crea una base de datos MySQL e importa el archivo `.sql` del proyecto.
+2.  **API PHP:** Sube la carpeta del backend a tu servidor.
+3.  **Conexión:** Edita el archivo de configuración de la API con las credenciales de tu base de datos.
+4.  **Prueba:** Verifica el acceso a los endpoints (ej.: `http://tu-servidor/api/productos.php`).
 
-1.  **Base de Datos:** Importa el archivo SQL del proyecto (normalmente `almacen_db.sql`) en tu servidor MySQL (phpMyAdmin).
-2.  **API:** Sube la carpeta del backend (API PHP) a tu servidor (ej: `htdocs/almacen-api/`).
-3.  **Conexión:** Edita el archivo de configuración en la API (ej: `db_config.php`) con tus credenciales de base de datos (host, usuario, contraseña).
-4.  **Prueba:** Abre en el navegador `http://tu-servidor/almacen-api/productos.php`. Si recibes un JSON (vacío o con datos), la API está lista.
+### 3. Instalación de la Aplicación
 
-### 3. Configuración del Visor 3D (Web)
-El visor 3D es el componente visual que muestra las rutas.
-*   **Opción A (Recomendada):** Despliégalo en **GitHub Pages**. Sube la carpeta `docs` de la web a un repositorio y activa Pages en la configuración.
-*   **Opción B (Local):** Alójalo en la misma carpeta de tu servidor local (ej: `htdocs/visor3d/`).
+#### Opción A: Desde Código Fuente
+1.  Clona el repositorio: `git clone https://github.com/USUARIO/ALMACEN-3D.git`.
+2.  Abre la carpeta en **Android Studio**.
+3.  Sincroniza Gradle y ejecuta la app en un dispositivo físico o emulador.
 
-### 4. Instalación de la App Android
+#### Opción B: Generar APK
+1.  En Android Studio, ve a `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`.
+2.  Una vez generado, instala el archivo `app-debug.apk` en tu dispositivo.
 
-#### Desde el código fuente:
-1.  Abre **Android Studio** y selecciona `Open` -> Busca la carpeta `Almacen3D2`.
-2.  Espera a que termine el **Gradle Sync**.
-3.  Conecta tu celular físico (con Depuración USB activada) o inicia un emulador.
-4.  Haz clic en el botón **Run (Play)** para instalar la app.
-
-#### Generar APK para otros dispositivos:
-Si quieres pasarle la app a otra persona sin usar Android Studio:
-1. En Android Studio, ve a `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`.
-2. Una vez termine, haz clic en `locate` en el aviso emergente.
-3. Envía el archivo `app-debug.apk` al dispositivo e instálalo manualmente.
-
-### 5. Configuración Final en el Celular
-Una vez instalada la app:
-1.  Abre la aplicación.
-2.  En la pantalla de Login, toca el botón **"Configurar Servidor"**.
-3.  Introduce la URL completa de tu API (ej: `http://192.168.1.50/almacen-api/`). 
-    *   *Nota: Si usas servidor local, usa la IP de tu PC, no "localhost".*
-4.  Inicia sesión con tus credenciales (Usuario/Contraseña configurados en la DB).
+### 4. Configuración Final
+1.  Abre la app e ignora el error de conexión inicial.
+2.  Toca el botón **"Configurar Servidor"** en la pantalla de login.
+3.  Introduce la URL de tu API (ej: `http://192.168.1.50/api/`).
+4.  Inicia sesión con las credenciales configuradas en la base de datos.
 
 ---
 
-## 📱 Funciones que puedes probar
-*   **Búsqueda de Productos:** Encuentra artículos por nombre o SKU.
-*   **Escáner QR/Barras:** Usa la cámara para identificar productos rápidamente.
-*   **Ruta 3D:** Selecciona un producto y toca "Ver Ruta" para abrir el visor interactivo.
-*   **Edición de Stock:** Actualiza información directamente desde el móvil.
+## 🛠️ Stack Tecnológico
+
+*   **Frontend Móvil:** Kotlin, Jetpack libraries (CameraX, WebKit), Material Design 3.
+*   **Motor 3D:** Three.js integrado mediante WebView optimizado.
+*   **Backend:** PHP 8.x con arquitectura orientada a servicios.
+*   **Persistencia:** MySQL (Remoto) y SharedPreferences (Local).
 
 ---
 
-## ⚠️ Solución de Problemas Comunes
-*   **Error de Conexión:** Verifica que tu celular y tu PC estén en la misma red Wi-Fi si usas servidor local.
-*   **El Visor 3D no carga:** Asegúrate de que la URL en la configuración de la app apunte correctamente a la API y que el visor tenga acceso a internet.
-*   **Gradle Error:** Asegúrate de tener conexión a internet para descargar las dependencias la primera vez.
+## 📂 Estructura del Proyecto
+*   `/app`: Código fuente Android (Kotlin).
+*   `/app/src/main/assets`: Activos del visor 3D.
+*   `/docs`: Documentación detallada de las fases de desarrollo.
 
 ---
-*Desarrollado para la optimización y digitalización logística.*
+*Desarrollado para la optimización y digitalización de procesos logísticos.*
